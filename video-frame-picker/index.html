@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Free Video Last Frame Extractor - Download Last 5 Frames</title>
+  <meta name="description" content="Upload a video and instantly extract the last 5 frames. Click any frame to download as PNG. Free, fast, and runs in your browser." />
+  <meta name="robots" content="index,follow" />
+  <link rel="canonical" href="https://example.com/" />
+
+  <meta property="og:title" content="Free Video Last Frame Extractor" />
+  <meta property="og:description" content="Upload video, preview last 5 frames, click to download." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://example.com/" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Free Video Last Frame Extractor" />
+  <meta name="twitter:description" content="Upload video, preview last 5 frames, click to download." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Free Video Last Frame Extractor",
+    "applicationCategory": "MultimediaApplication",
+    "operatingSystem": "Any",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "description": "Upload a video and extract the last five frames instantly in your browser."
+  }
+  </script>
+
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --text: #141922;
+      --muted: #5b6473;
+      --accent: #0f766e;
+      --accent-2: #0b5e57;
+      --border: #dbe1ea;
+      --shadow: 0 10px 30px rgba(16, 24, 40, 0.08);
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top right, #e9f7f4, transparent 40%), var(--bg);
+      line-height: 1.5;
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.5rem, 2.7vw, 2.4rem);
+      line-height: 1.2;
+    }
+
+    p {
+      margin: 0 0 16px;
+      color: var(--muted);
+    }
+
+    .upload-box {
+      border: 2px dashed #b8c4d6;
+      border-radius: 12px;
+      padding: 16px;
+      background: #fbfdff;
+    }
+
+    input[type="file"] {
+      width: 100%;
+    }
+
+    .note {
+      font-size: 0.92rem;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .status {
+      margin-top: 12px;
+      color: var(--accent-2);
+      font-weight: 600;
+      min-height: 24px;
+    }
+
+    .frames {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .frame-btn {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px;
+      background: white;
+      text-align: left;
+      cursor: pointer;
+      transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .frame-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+    }
+
+    .frame-btn img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 8px;
+      border: 1px solid #edf1f7;
+      background: #f5f7fa;
+    }
+
+    .frame-label {
+      margin-top: 6px;
+      font-size: 0.88rem;
+      color: #3d4655;
+    }
+
+    .hidden-video {
+      position: absolute;
+      left: -9999px;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    footer {
+      margin-top: 22px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <h1>Free Video Last 5 Frames Extractor</h1>
+      <p>Upload your video, preview the final five frames, and click any frame to download it as PNG.</p>
+
+      <div class="upload-box">
+        <label for="videoInput"><strong>Select a video file</strong></label>
+        <input id="videoInput" type="file" accept="video/*" />
+        <p class="note">Works best with browser-supported formats like MP4/WebM. No upload to server: processing happens in your browser.</p>
+      </div>
+
+      <div id="status" class="status" aria-live="polite"></div>
+      <div id="frames" class="frames"></div>
+    </section>
+
+    <footer>
+      Tip: For SEO, replace <code>https://example.com/</code> in this file with your real domain before going live.
+    </footer>
+  </main>
+
+  <video id="video" class="hidden-video" preload="metadata" muted playsinline></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <script>
+    const videoInput = document.getElementById("videoInput");
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const framesEl = document.getElementById("frames");
+    const statusEl = document.getElementById("status");
+
+    let currentObjectUrl = null;
+
+    function setStatus(message) {
+      statusEl.textContent = message;
+    }
+
+    function waitForEvent(target, eventName) {
+      return new Promise((resolve, reject) => {
+        const onOk = () => {
+          cleanup();
+          resolve();
+        };
+
+        const onErr = () => {
+          cleanup();
+          reject(new Error(`Failed while waiting for ${eventName}`));
+        };
+
+        const cleanup = () => {
+          target.removeEventListener(eventName, onOk);
+          target.removeEventListener("error", onErr);
+        };
+
+        target.addEventListener(eventName, onOk, { once: true });
+        target.addEventListener("error", onErr, { once: true });
+      });
+    }
+
+    async function seekTo(timeInSeconds) {
+      if (!Number.isFinite(timeInSeconds)) {
+        throw new Error("Invalid seek time.");
+      }
+
+      const safeTime = Math.max(0, Math.min(timeInSeconds, Math.max(video.duration - 0.001, 0)));
+      const seeked = waitForEvent(video, "seeked");
+      video.currentTime = safeTime;
+      await seeked;
+    }
+
+    function drawCurrentFrame() {
+      const width = video.videoWidth;
+      const height = video.videoHeight;
+      if (!width || !height) {
+        throw new Error("Could not read video frame size.");
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, width, height);
+      return canvas.toDataURL("image/png");
+    }
+
+    function downloadDataUrl(dataUrl, filename) {
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    function renderFrames(frames) {
+      framesEl.innerHTML = "";
+      frames.forEach((frame, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "frame-btn";
+        btn.type = "button";
+        btn.setAttribute("aria-label", `Download frame ${idx + 1}`);
+
+        btn.innerHTML = `
+          <img src="${frame.dataUrl}" alt="Video frame at ${frame.timeLabel}" />
+          <div class="frame-label">${frame.timeLabel} (click to download)</div>
+        `;
+
+        btn.addEventListener("click", () => {
+          downloadDataUrl(frame.dataUrl, `video-frame-${idx + 1}.png`);
+        });
+
+        framesEl.appendChild(btn);
+      });
+    }
+
+    function buildLastFiveTimes(duration) {
+      const count = 5;
+      const epsilon = 0.03;
+      const total = Math.max(duration - epsilon, 0);
+      const start = Math.max(total - 2, 0);
+      const step = count === 1 ? 0 : (total - start) / (count - 1);
+
+      return Array.from({ length: count }, (_, i) => {
+        const t = start + i * step;
+        return Math.max(0, Math.min(t, total));
+      });
+    }
+
+    function formatTime(seconds) {
+      const s = Math.max(0, Math.floor(seconds));
+      const mins = Math.floor(s / 60);
+      const rem = s % 60;
+      return `${mins}:${String(rem).padStart(2, "0")}`;
+    }
+
+    async function processVideo(file) {
+      if (!file) return;
+
+      if (currentObjectUrl) {
+        URL.revokeObjectURL(currentObjectUrl);
+      }
+
+      framesEl.innerHTML = "";
+      setStatus("Loading video...");
+
+      currentObjectUrl = URL.createObjectURL(file);
+      video.src = currentObjectUrl;
+
+      try {
+        await waitForEvent(video, "loadedmetadata");
+
+        if (!Number.isFinite(video.duration) || video.duration <= 0) {
+          throw new Error("Unsupported video or empty duration.");
+        }
+
+        const times = buildLastFiveTimes(video.duration);
+        const frames = [];
+
+        setStatus("Extracting last 5 frames...");
+
+        for (let i = 0; i < times.length; i += 1) {
+          await seekTo(times[i]);
+          const dataUrl = drawCurrentFrame();
+          frames.push({
+            dataUrl,
+            timeLabel: formatTime(times[i])
+          });
+        }
+
+        renderFrames(frames);
+        setStatus("Done. Click any frame to download.");
+      } catch (err) {
+        console.error(err);
+        setStatus("This video format may not be supported by your browser. Try MP4 (H.264) or WebM.");
+      }
+    }
+
+    videoInput.addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      processVideo(file);
+    });
+  </script>
+</body>
+</html>
