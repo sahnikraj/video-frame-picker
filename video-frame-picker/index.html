@@ -3,33 +3,74 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Free Video Last Frame Extractor - Download Last 5 Frames</title>
-  <meta name="description" content="Upload a video and instantly extract the last 5 frames. Click any frame to download as PNG. Free, fast, and runs in your browser." />
+  <title>Final Frame Extract | Lastframe.video - Free Video Last Frame Extractor</title>
+  <meta name="description" content="Final frame extract tool by Lastframe.video. Upload a video, extract the last 5 frames, and download any frame instantly. Free online video frame extractor for US and UK creators." />
   <meta name="robots" content="index,follow" />
-  <link rel="canonical" href="https://example.com/" />
+  <link rel="canonical" href="https://finalframe.video/" />
+  <meta name="keywords" content="final frame extract, final frame extractor, last frame extractor, video frame extractor, extract last frame of video, get frame from video, extract frames from video online, mp4 frame extractor, video to frames, frame downloader" />
 
-  <meta property="og:title" content="Free Video Last Frame Extractor" />
-  <meta property="og:description" content="Upload video, preview last 5 frames, click to download." />
+  <meta property="og:title" content="Final Frame Extract - Free Video Frame Extractor" />
+  <meta property="og:description" content="Upload video, get last 5 frames, and download in one click. Fast browser-based frame extraction." />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://example.com/" />
+  <meta property="og:url" content="https://finalframe.video/" />
+  <meta property="og:site_name" content="Lastframe.video" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Free Video Last Frame Extractor" />
-  <meta name="twitter:description" content="Upload video, preview last 5 frames, click to download." />
+  <meta name="twitter:title" content="Final Frame Extract - Lastframe.video" />
+  <meta name="twitter:description" content="Free video frame extractor: upload video, extract last 5 frames, download any frame." />
 
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "Free Video Last Frame Extractor",
-    "applicationCategory": "MultimediaApplication",
-    "operatingSystem": "Any",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
-    },
-    "description": "Upload a video and extract the last five frames instantly in your browser."
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "name": "Lastframe.video",
+        "url": "https://finalframe.video/"
+      },
+      {
+        "@type": "SoftwareApplication",
+        "name": "Final Frame Extract",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "Web",
+        "url": "https://finalframe.video/",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "description": "Free online video frame extractor to capture and download the last frames from uploaded videos."
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How do I extract last frame of video online?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Upload your video, wait for the last five frames to load, then click any frame to download it as PNG."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does this video frame extractor support MP4?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes, MP4 is supported when the browser can decode the codec. WebM is also commonly supported."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I use extracted frames to maintain AI video continuity?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. You can use end frames as reference images for start and end frame workflows in AI video tools."
+            }
+          }
+        ]
+      }
+    ]
   }
   </script>
 
@@ -72,10 +113,20 @@
       padding: 20px;
     }
 
+    .intro {
+      margin-bottom: 14px;
+    }
+
     h1 {
       margin: 0 0 8px;
       font-size: clamp(1.5rem, 2.7vw, 2.4rem);
       line-height: 1.2;
+    }
+
+    h2 {
+      margin: 18px 0 8px;
+      font-size: clamp(1.1rem, 2vw, 1.4rem);
+      line-height: 1.3;
     }
 
     p {
@@ -153,6 +204,29 @@
       pointer-events: none;
     }
 
+    .content-grid {
+      margin-top: 16px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .content-box {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      background: #fcfdff;
+    }
+
+    .content-box ul {
+      margin: 0;
+      padding-left: 18px;
+      color: #3d4655;
+    }
+
+    .content-box li {
+      margin-bottom: 8px;
+    }
+
     footer {
       margin-top: 22px;
       font-size: 0.85rem;
@@ -163,21 +237,53 @@
 <body>
   <main class="wrap">
     <section class="card">
-      <h1>Free Video Last 5 Frames Extractor</h1>
-      <p>Upload your video, preview the final five frames, and click any frame to download it as PNG.</p>
+      <div class="intro">
+        <h1>Final Frame Extract Tool</h1>
+        <p>Lastframe.video helps you extract the final frame and last sequence from any supported video format directly in your browser. Use it to keep continuity between AI video shots.</p>
+      </div>
 
       <div class="upload-box">
         <label for="videoInput"><strong>Select a video file</strong></label>
         <input id="videoInput" type="file" accept="video/*" />
-        <p class="note">Works best with browser-supported formats like MP4/WebM. No upload to server: processing happens in your browser.</p>
+        <p class="note">Works best with browser-supported formats like MP4/WebM. No upload to server: processing happens in your browser. Popular for US and UK creators who need quick frame extraction.</p>
       </div>
 
       <div id="status" class="status" aria-live="polite"></div>
       <div id="frames" class="frames"></div>
+
+      <div class="content-grid">
+        <section class="content-box" aria-labelledby="how-it-works">
+          <h2 id="how-it-works">How to extract last frame of video</h2>
+          <ul>
+            <li>Upload your video file (MP4, WebM, and other browser-supported formats).</li>
+            <li>The tool captures and displays the last 5 frames from your video timeline.</li>
+            <li>Click any frame to download and reuse it in editing or AI workflows.</li>
+          </ul>
+        </section>
+
+        <section class="content-box" aria-labelledby="use-cases">
+          <h2 id="use-cases">Best use cases for frame extraction</h2>
+          <ul>
+            <li>Extract image from video online for social media thumbnails.</li>
+            <li>Get frame from video to maintain start and end frame AI video continuity.</li>
+            <li>Use as a video frame grabber for final shot matching across clips.</li>
+            <li>Save video frame references for animation, ads, and storyboard revisions.</li>
+          </ul>
+        </section>
+
+        <section class="content-box" aria-labelledby="faq">
+          <h2 id="faq">FAQ: video frame extractor</h2>
+          <ul>
+            <li><strong>Can I extract frames from video online for free?</strong> Yes, this tool is free.</li>
+            <li><strong>Can I download a frame as image?</strong> Yes, each frame downloads as PNG.</li>
+            <li><strong>Does it work for all codecs?</strong> Support depends on your browser decoder.</li>
+          </ul>
+        </section>
+      </div>
     </section>
 
     <footer>
-      Tip: For SEO, replace <code>https://example.com/</code> in this file with your real domain before going live.
+      Lastframe.video: free final frame extractor and video frame downloader for creators.
     </footer>
   </main>
 
