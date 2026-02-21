@@ -349,6 +349,7 @@
     const statusEl = document.getElementById("status");
     const processingLoaderEl = document.getElementById("processingLoader");
     const processingTextEl = document.getElementById("processingText");
+    const FRAME_EXTRACT_API_BASE = (window.FRAME_EXTRACT_API_BASE || "").trim().replace(/\/+$/, "");
 
     let currentObjectUrl = null;
 
@@ -481,7 +482,53 @@
       return `${mins}:${String(rem).padStart(2, "0")}`;
     }
 
-    async function processVideo(file) {
+    async function processVideoViaApi(file) {
+      const formData = new FormData();
+      formData.append("video", file);
+
+      setStatus("Uploading video to extraction server...");
+      setLoading(true, "Uploading video...");
+      renderFrameSkeletons(5);
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 240000);
+
+      try {
+        const response = await fetch(`${FRAME_EXTRACT_API_BASE}/api/extract-last-frames`, {
+          method: "POST",
+          body: formData,
+          signal: controller.signal
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const detail = payload && payload.detail ? payload.detail : "Server extraction failed.";
+          throw new Error(detail);
+        }
+
+        const frames = (payload.frames || []).map((f, idx) => ({
+          dataUrl: f.data_url,
+          timeLabel: f.time_label || formatTime(f.time_seconds || idx)
+        }));
+
+        if (!frames.length) {
+          throw new Error("No frames returned by extraction server.");
+        }
+
+        renderFrames(frames);
+        setStatus("Done. Click any frame to download.");
+      } catch (err) {
+        console.error(err);
+        framesEl.innerHTML = "";
+        setStatus(`Server extraction failed: ${err.message}. Falling back to browser extraction...`);
+        await processVideoInBrowser(file);
+      } finally {
+        clearTimeout(timeout);
+        setLoading(false);
+      }
+    }
+
+    async function processVideoInBrowser(file) {
       if (!file) return;
 
       if (currentObjectUrl) {
@@ -534,6 +581,15 @@
       } finally {
         setLoading(false);
       }
+    }
+
+    async function processVideo(file) {
+      if (!file) return;
+      if (FRAME_EXTRACT_API_BASE) {
+        await processVideoViaApi(file);
+        return;
+      }
+      await processVideoInBrowser(file);
     }
 
     videoInput.addEventListener("change", (event) => {

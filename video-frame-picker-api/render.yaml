@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: lastframe-extractor-api
+    env: docker
+    dockerfilePath: ./video-frame-picker-api/Dockerfile
+    plan: starter
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: MAX_UPLOAD_MB
+        value: "200"
+      - key: REQUEST_TIMEOUT_SEC
+        value: "180"
+      - key: ALLOWED_ORIGINS
+        value: "https://finalframe.video,https://deploy-preview-1--framepicker.netlify.app"
