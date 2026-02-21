@@ -83,46 +83,6 @@
               "@type": "Answer",
               "text": "Yes. After extraction, each preview is clickable and downloads as a PNG. Many users use these stills as thumbnail candidates, storyboard references, or continuity anchors."
             }
-          },
-          {
-            "@type": "Question",
-            "name": "How is this useful for AI video start and end frame continuity?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Creators often take the final frame from one clip and use it as the starting visual reference for the next generation. That helps reduce visual jumps and keeps style, lighting, and subject placement more consistent."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Is this a full video-to-frames converter?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Not exactly. This page is specialized for final-sequence extraction, not full timeline export. If you need every frame, use a full video-to-frames pipeline."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Can I capture frames from video on mobile devices?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Usually yes on modern mobile browsers, as long as the video codec is supported. If extraction fails, converting to a common MP4 profile often resolves the issue."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "How many frames can I download from each upload?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "This tool shows the last five frames from the uploaded clip. You can download any or all of them individually depending on what best matches your use case."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "What should I do if the extracted image does not look sharp enough?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Use a higher-resolution source video and a browser that supports the file codec well. Since extraction is based on decoded video frames, input quality and codec support directly affect output quality."
-            }
           }
         ]
       }
@@ -132,129 +92,300 @@
 
   <style>
     :root {
-      --bg: #f6f7fb;
-      --card: #ffffff;
-      --text: #141922;
-      --muted: #5b6473;
-      --accent: #0f766e;
-      --accent-2: #0b5e57;
-      --border: #dbe1ea;
-      --shadow: 0 10px 30px rgba(16, 24, 40, 0.08);
-      --radius: 14px;
+      --bg: #f6f4ff;
+      --ink: #161237;
+      --muted: #5f5a79;
+      --panel: #ffffff;
+      --line: #e2dcff;
+      --violet: #6b3df5;
+      --violet-deep: #4a23ca;
+      --violet-soft: #efe9ff;
+      --radius-xl: 24px;
+      --radius-lg: 16px;
+      --shadow-soft: 0 18px 45px rgba(57, 35, 141, 0.14);
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-      color: var(--text);
-      background: radial-gradient(circle at top right, #e9f7f4, transparent 40%), var(--bg);
-      line-height: 1.5;
+      font-family: "Plus Jakarta Sans", "Avenir Next", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 420px at 5% -10%, #dcd1ff 0%, transparent 60%),
+        radial-gradient(900px 350px at 100% 0%, #efe9ff 0%, transparent 58%),
+        var(--bg);
+      line-height: 1.6;
     }
 
-    .wrap {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 24px;
+    a { color: inherit; text-decoration: none; }
+
+    .shell {
+      max-width: 1180px;
+      margin: 20px auto;
+      border: 1px solid #d8ceff;
+      border-radius: 28px;
+      background: linear-gradient(180deg, #ffffff 0%, #fbf9ff 100%);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
     }
 
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 20px;
+    .hero {
+      min-height: 76vh;
+      padding: 24px 38px 34px;
+      border-bottom: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(240, 235, 255, 0.65) 0%, rgba(255, 255, 255, 0) 45%),
+        #fff;
     }
 
-    .intro {
-      margin-bottom: 14px;
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+    }
+
+    .logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(145deg, #7f57ff, #4f2ce1);
+      color: white;
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      box-shadow: 0 8px 20px rgba(87, 49, 221, 0.3);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.95rem;
+      flex-wrap: wrap;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      padding: 10px 18px;
+      font-weight: 700;
+      font-size: 0.92rem;
+      cursor: pointer;
+      transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn-light {
+      background: #fff;
+      color: var(--ink);
+      border-color: #ddd6fb;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--violet), #5b2eea);
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(88, 46, 228, 0.34);
+    }
+
+    .hero-center {
+      text-align: center;
+      max-width: 860px;
+      margin: 86px auto 0;
+    }
+
+    .kicker {
+      font-weight: 700;
+      color: #6a6290;
+      margin: 0 0 10px;
     }
 
     h1 {
-      margin: 0 0 8px;
-      font-size: clamp(1.5rem, 2.7vw, 2.4rem);
-      line-height: 1.2;
+      margin: 0;
+      font-size: clamp(2.2rem, 6vw, 4.5rem);
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      font-weight: 900;
+    }
+
+    .ink-violet {
+      color: #5f37ea;
+      text-shadow: 0 9px 18px rgba(95, 55, 234, 0.15);
+    }
+
+    .hero-sub {
+      margin: 16px auto 0;
+      max-width: 720px;
+      color: var(--muted);
+      font-size: clamp(1rem, 2.2vw, 1.25rem);
+    }
+
+    .hero-actions {
+      margin-top: 28px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .supported {
+      margin-top: 34px;
+      color: #6f688d;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .chips {
+      margin-top: 10px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      border: 1px solid #dbd4ff;
+      background: #f8f4ff;
+      color: #483f77;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .content {
+      padding: 28px 38px 44px;
+      display: grid;
+      gap: 16px;
+      background: #fbf9ff;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 18px;
     }
 
     h2 {
-      margin: 18px 0 8px;
-      font-size: clamp(1.1rem, 2vw, 1.4rem);
+      margin: 0 0 8px;
+      font-size: clamp(1.2rem, 2.1vw, 1.55rem);
       line-height: 1.3;
     }
 
     h3 {
       margin: 0 0 6px;
-      font-size: 1rem;
+      font-size: 1.02rem;
       line-height: 1.35;
     }
 
     p {
-      margin: 0 0 16px;
+      margin: 0 0 14px;
       color: var(--muted);
     }
 
     .upload-box {
-      border: 2px dashed #b8c4d6;
-      border-radius: 12px;
+      border: 2px dashed #cbbdff;
+      border-radius: 14px;
       padding: 16px;
-      background: #fbfdff;
+      background: #faf7ff;
     }
 
-    input[type="file"] {
+    .upload-box input[type="file"] {
       width: 100%;
+      margin-top: 6px;
     }
 
     .note {
-      font-size: 0.92rem;
-      color: var(--muted);
       margin-top: 8px;
+      font-size: 0.92rem;
+      color: #6a6290;
     }
 
     .status {
       margin-top: 12px;
-      color: var(--accent-2);
-      font-weight: 600;
-      min-height: 24px;
+      color: var(--violet-deep);
+      font-weight: 700;
+      min-height: 22px;
     }
 
     .frames {
-      margin-top: 18px;
+      margin-top: 14px;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 12px;
     }
 
     .frame-btn {
-      border: 1px solid var(--border);
-      border-radius: 10px;
+      border: 1px solid #ddd4ff;
+      border-radius: 12px;
       padding: 8px;
-      background: white;
+      background: #fff;
       text-align: left;
       cursor: pointer;
-      transition: transform 0.16s ease, box-shadow 0.16s ease;
+      transition: transform 0.14s ease, box-shadow 0.14s ease;
     }
 
     .frame-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 10px 22px rgba(66, 38, 156, 0.13);
     }
 
     .frame-btn img {
       width: 100%;
-      height: auto;
-      display: block;
       border-radius: 8px;
-      border: 1px solid #edf1f7;
-      background: #f5f7fa;
+      border: 1px solid #efe8ff;
+      display: block;
+      background: #f7f3ff;
     }
 
     .frame-label {
-      margin-top: 6px;
-      font-size: 0.88rem;
-      color: #3d4655;
+      margin-top: 7px;
+      font-size: 0.86rem;
+      color: #4f4678;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .faq-item { margin-bottom: 14px; }
+
+    .faq-item p {
+      margin: 0;
+      color: #4f4678;
+    }
+
+    footer {
+      padding: 0 38px 30px;
+      color: #6d6590;
+      font-size: 0.9rem;
     }
 
     .hidden-video {
@@ -266,143 +397,126 @@
       pointer-events: none;
     }
 
-    .content-grid {
-      margin-top: 16px;
-      display: grid;
-      gap: 14px;
-    }
-
-    .content-box {
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px;
-      background: #fcfdff;
-    }
-
-    .content-box ul {
-      margin: 0;
-      padding-left: 18px;
-      color: #3d4655;
-    }
-
-    .content-box li {
-      margin-bottom: 8px;
-    }
-
-    .faq-item {
-      margin-bottom: 14px;
-    }
-
-    .faq-item p {
-      margin: 0;
-      color: #3d4655;
-    }
-
-    footer {
-      margin-top: 22px;
-      font-size: 0.85rem;
-      color: var(--muted);
+    @media (max-width: 900px) {
+      .hero { min-height: auto; padding: 20px 18px 28px; }
+      .content { padding: 18px; }
+      footer { padding: 0 18px 22px; }
+      .hero-center { margin-top: 54px; }
+      .two-col { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <main class="wrap">
-    <section class="card">
-      <div class="intro">
-        <h1>Final Frame Tool</h1>
-        <p>Lastframe.video helps you extract the final frame and last sequence from any supported video format directly in your browser. Use it to keep continuity between AI video shots.</p>
-      </div>
+  <div class="shell">
+    <section class="hero">
+      <header class="nav">
+        <a href="#top" class="brand">
+          <span class="logo">L</span>
+          <span>LASTFRAME.VIDEO</span>
+        </a>
+        <nav class="nav-links">
+          <a href="#extractor">Extractor</a>
+          <a href="#use-cases">Use Cases</a>
+          <a href="#faq">FAQs</a>
+          <a href="#seo-copy">How it works</a>
+        </nav>
+        <div class="nav-actions">
+          <a class="btn btn-light" href="#extractor">Try Free</a>
+          <a class="btn btn-primary" href="#extractor">Extract Final Frame</a>
+        </div>
+      </header>
 
-      <div class="upload-box">
-        <label for="videoInput"><strong>Select a video file</strong></label>
-        <input id="videoInput" type="file" accept="video/*" />
-        <p class="note">Works best with browser-supported formats like MP4/WebM. No upload to server: processing happens in your browser. Popular for US and UK creators who need quick frame extraction.</p>
-      </div>
-
-      <div id="status" class="status" aria-live="polite"></div>
-      <div id="frames" class="frames"></div>
-
-      <div class="content-grid">
-        <section class="content-box" aria-labelledby="how-it-works">
-          <h2 id="how-it-works">How to extract last frame of video</h2>
-          <ul>
-            <li>Upload your video file (MP4, WebM, and other browser-supported formats).</li>
-            <li>The tool captures and displays the last 5 frames from your video timeline.</li>
-            <li>Click any frame to download and reuse it in editing or AI workflows.</li>
-          </ul>
-        </section>
-
-        <section class="content-box" aria-labelledby="use-cases">
-          <h2 id="use-cases">Best use cases for frame extraction</h2>
-          <ul>
-            <li>Extract image from video online for social media thumbnails.</li>
-            <li>Get frame from video to maintain start and end frame AI video continuity.</li>
-            <li>Use as a video frame grabber for final shot matching across clips.</li>
-            <li>Save video frame references for animation, ads, and storyboard revisions.</li>
-          </ul>
-        </section>
-
-        <section class="content-box" aria-labelledby="keyword-coverage">
-          <h2 id="keyword-coverage">When to use this tool</h2>
-          <p>This page is designed for one practical job: getting the last visual moments of a clip quickly. People use it when they need a final frame for approvals, continuity checks, thumbnails, or visual handoff between editing tools.</p>
-          <p>If you searched for terms like last frame extractor, video frame grabber, frame downloader, or get frame from video, this workflow should feel familiar. You upload once, inspect the last five moments, and download the exact still you need.</p>
-          <p>It is also useful in AI video pipelines. A final frame can become a stable reference for the next shot, which helps reduce abrupt changes in framing, subject placement, and scene styling between generations.</p>
-        </section>
-
-        <section class="content-box" aria-labelledby="faq">
-          <h2 id="faq">FAQ: video frame extractor</h2>
-          <div class="faq-item">
-            <h3>How do I extract the final frame from a video quickly?</h3>
-            <p>Upload the video, wait for the final five previews, then click the frame you want. This process is faster than opening an editor timeline when your only goal is to grab the last frame as an image.</p>
-          </div>
-          <div class="faq-item">
-            <h3>Is this the same as a full video-to-frames converter?</h3>
-            <p>No. This is a focused final-frame extractor. It is built for people who care about the end of the clip, not for exporting every frame across the entire timeline.</p>
-          </div>
-          <div class="faq-item">
-            <h3>Can I use it as an MP4 frame extractor for production clips?</h3>
-            <p>Yes, in most cases. If the browser can decode your MP4 codec profile, frame capture will work. If not, re-encode to a common H.264 profile and retry.</p>
-          </div>
-          <div class="faq-item">
-            <h3>Do you upload my video to a server for extraction?</h3>
-            <p>No, this page processes files in the browser. That is useful when you want quick results without waiting for cloud processing or sharing source files externally.</p>
-          </div>
-          <div class="faq-item">
-            <h3>Why do AI creators care about the last frame so much?</h3>
-            <p>In many AI pipelines, the end frame of one shot becomes the start reference of the next shot. That transition technique helps preserve continuity between clips and avoids jarring jumps.</p>
-          </div>
-          <div class="faq-item">
-            <h3>Can this help with start and end frame AI video workflows?</h3>
-            <p>Yes. You can download a final frame here and feed it into your next prompt or scene setup. It is a simple way to chain clips with stronger visual consistency.</p>
-          </div>
-          <div class="faq-item">
-            <h3>How many frames do I get per upload?</h3>
-            <p>You get the last five frames from the clip. This gives enough choice to pick the exact ending moment you want for export.</p>
-          </div>
-          <div class="faq-item">
-            <h3>Can I use downloaded frames for thumbnails and storyboards?</h3>
-            <p>Yes. PNG frame output works well for social thumbnails, client approvals, visual references, and creative planning documents.</p>
-          </div>
-          <div class="faq-item">
-            <h3>Does this work on mobile browsers?</h3>
-            <p>Usually yes, as long as the browser supports the file format and codec. When extraction fails on mobile, converting the source to a standard MP4 often solves it.</p>
-          </div>
-          <div class="faq-item">
-            <h3>What if the extracted frame looks soft or low quality?</h3>
-            <p>Frame quality depends on source resolution and codec quality. Start from a higher-quality source file for better still-image output.</p>
-          </div>
-          <div class="faq-item">
-            <h3>Can I upload a video URL and extract frames directly?</h3>
-            <p>No, this version works with local file upload from your device. URL ingestion can be added later as a separate feature.</p>
-          </div>
-        </section>
+      <div class="hero-center" id="top">
+        <p class="kicker">Welcome to Lastframe.video</p>
+        <h1>Your <span class="ink-violet">Final Frame</span> Extractor</h1>
+        <p class="hero-sub">Extract the last 5 frames from your video and download any frame instantly. Built for fast continuity workflows in AI video and post-production.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#extractor">Upload Video</a>
+          <a class="btn btn-light" href="#faq">Read FAQs</a>
+        </div>
+        <div class="supported">Works in modern browsers with common video codecs</div>
+        <div class="chips">
+          <span class="chip">MP4</span>
+          <span class="chip">WebM</span>
+          <span class="chip">PNG Download</span>
+          <span class="chip">No Server Upload</span>
+          <span class="chip">US & UK Friendly</span>
+        </div>
       </div>
     </section>
 
+    <main class="content">
+      <section class="panel" id="extractor">
+        <h2>Extract Last 5 Frames</h2>
+        <p>Upload a video file to generate the last five frames. Click any thumbnail to download a frame as PNG.</p>
+        <div class="upload-box">
+          <label for="videoInput"><strong>Select a video file</strong></label>
+          <input id="videoInput" type="file" accept="video/*" />
+          <p class="note">Best results with browser-supported MP4/WebM formats. Processing happens in your browser.</p>
+        </div>
+        <div id="status" class="status" aria-live="polite"></div>
+        <div id="frames" class="frames"></div>
+      </section>
+
+      <section class="two-col">
+        <article class="panel" id="seo-copy">
+          <h2>When to use this tool</h2>
+          <p>This tool is for creators who need quick final-frame extraction without opening heavy editing software. It is ideal when your goal is to capture the ending visual from a clip and reuse it immediately.</p>
+          <p>It fits workflows where the last frame from one clip becomes the first visual reference for the next clip. That pattern helps maintain continuity in AI video generation and shot transitions.</p>
+          <p>If you searched for terms like last frame extractor, frame grabber, or video frame downloader, this page is built for that practical outcome.</p>
+        </article>
+
+        <article class="panel" id="use-cases">
+          <h2>Popular use cases</h2>
+          <p>Creators use this for thumbnail selection, continuity checks, client previews, and storyboard references. The final five-frame view helps choose the most stable end moment instead of relying on a single auto-sampled frame.</p>
+          <p>It is also useful in rapid iteration loops where you need to export, inspect, and reuse a frame across multiple tools.</p>
+        </article>
+      </section>
+
+      <section class="panel" id="faq">
+        <h2>FAQ</h2>
+
+        <div class="faq-item">
+          <h3>How do I extract the final frame from a video without editing software?</h3>
+          <p>Upload your file, wait for the final five frames to appear, and click the frame you want. It downloads as PNG and can be reused immediately in editing, design, or AI generation workflows.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Is Lastframe.video free for final frame extraction?</h3>
+          <p>Yes. This tool is free and focused on one practical task: extracting the ending frames quickly so you can keep production moving.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Does this work as an MP4 frame extractor and WebM frame extractor?</h3>
+          <p>In most cases, yes. Support depends on browser codec compatibility. MP4 (H.264) and WebM are generally the most reliable options on modern browsers.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Are videos uploaded to a server during extraction?</h3>
+          <p>No. The extraction runs in your browser for this page. That helps when you want faster turnaround and less dependency on remote processing queues.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Can this help with AI video start and end frame continuity?</h3>
+          <p>Yes. Many creators take the last frame from one generated clip and use it as reference input for the next scene. That helps reduce abrupt visual jumps between shots.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Can I use it as a full video-to-frames converter?</h3>
+          <p>This page is specialized for the final sequence and last frame selection. If you need every frame across an entire timeline, you should use a full extraction pipeline.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>How many frames do I get from each upload?</h3>
+          <p>You get the last five frames. This gives enough choice to pick the exact end moment that best fits your continuity or thumbnail needs.</p>
+        </div>
+      </section>
+    </main>
+
     <footer>
-      Lastframe.video: free final frame extractor and video frame downloader for creators.
+      Lastframe.video: free final frame extractor and video frame downloader for creators in the US, UK, and globally.
     </footer>
-  </main>
+  </div>
 
   <video id="video" class="hidden-video" preload="metadata" muted playsinline></video>
   <canvas id="canvas" style="display:none;"></canvas>
