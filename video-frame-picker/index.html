@@ -158,6 +158,60 @@
         radial-gradient(800px 380px at 100% 0, rgba(210, 189, 255, 0.35), transparent 60%),
         #f7f4ff;
     }
+
+    .frame-card {
+      border: 1px solid #dacbff;
+      background: #fff;
+      border-radius: 12px;
+      padding: 8px;
+      text-align: left;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .frame-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(84, 32, 219, 0.12);
+    }
+
+    .frame-thumb {
+      display: block;
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #ebe3ff;
+      background: #f5f1ff;
+    }
+
+    .frame-meta {
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #3c2f7a;
+    }
+
+    .skeleton-thumb {
+      height: 120px;
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #ebe3ff;
+      background: linear-gradient(90deg, #e9e0ff 20%, #f6f1ff 40%, #e9e0ff 60%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s linear infinite;
+    }
+
+    .skeleton-line {
+      margin-top: 8px;
+      height: 12px;
+      width: 62%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #e9e0ff 20%, #f6f1ff 40%, #e9e0ff 60%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s linear infinite;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
   </style>
 </head>
 <body class="page-bg text-ink antialiased">
@@ -377,13 +431,13 @@
       framesEl.innerHTML = "";
       frames.forEach((frame, idx) => {
         const btn = document.createElement("button");
-        btn.className = "rounded-xl border border-violet-200 bg-white p-2 text-left transition hover:-translate-y-0.5 hover:shadow-md";
+        btn.className = "frame-card";
         btn.type = "button";
         btn.setAttribute("aria-label", `Download frame ${idx + 1}`);
 
         btn.innerHTML = `
-          <img src="${frame.dataUrl}" alt="Video frame at ${frame.timeLabel}" class="block w-full rounded-lg border border-violet-100 bg-violet-50" />
-          <div class="mt-2 text-xs font-semibold text-violet-900">${frame.timeLabel} (click to download)</div>
+          <img src="${frame.dataUrl}" alt="Video frame at ${frame.timeLabel}" class="frame-thumb" />
+          <div class="frame-meta">${frame.timeLabel} (click to download)</div>
         `;
 
         btn.addEventListener("click", () => {
@@ -398,10 +452,10 @@
       framesEl.innerHTML = "";
       for (let i = 0; i < count; i += 1) {
         const card = document.createElement("div");
-        card.className = "rounded-xl border border-violet-200 bg-white p-2";
+        card.className = "frame-card";
         card.innerHTML = `
-          <div class="h-[120px] w-full animate-pulse rounded-lg border border-violet-100 bg-gradient-to-r from-violet-100 via-violet-50 to-violet-100"></div>
-          <div class="mt-2 h-3 w-3/5 animate-pulse rounded bg-violet-100"></div>
+          <div class="skeleton-thumb"></div>
+          <div class="skeleton-line"></div>
         `;
         framesEl.appendChild(card);
       }
