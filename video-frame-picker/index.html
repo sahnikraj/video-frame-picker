@@ -394,6 +394,19 @@
       });
     }
 
+    function renderFrameSkeletons(count = 5) {
+      framesEl.innerHTML = "";
+      for (let i = 0; i < count; i += 1) {
+        const card = document.createElement("div");
+        card.className = "rounded-xl border border-violet-200 bg-white p-2";
+        card.innerHTML = `
+          <div class="h-[120px] w-full animate-pulse rounded-lg border border-violet-100 bg-gradient-to-r from-violet-100 via-violet-50 to-violet-100"></div>
+          <div class="mt-2 h-3 w-3/5 animate-pulse rounded bg-violet-100"></div>
+        `;
+        framesEl.appendChild(card);
+      }
+    }
+
     function buildLastFiveTimes(duration) {
       const count = 5;
       const epsilon = 0.03;
@@ -424,6 +437,7 @@
       framesEl.innerHTML = "";
       setStatus("Loading video...");
       setLoading(true, "Loading and validating video...");
+      renderFrameSkeletons(5);
 
       currentObjectUrl = URL.createObjectURL(file);
       video.src = currentObjectUrl;
@@ -444,6 +458,7 @@
 
         setStatus("Extracting last 5 frames...");
         setLoading(true, "Extracting final frames...");
+        renderFrameSkeletons(5);
 
         for (let i = 0; i < times.length; i += 1) {
           await seekTo(times[i]);
@@ -460,6 +475,7 @@
       } catch (err) {
         console.error(err);
         setLoading(false);
+        framesEl.innerHTML = "";
         setStatus("Could not decode this video in your browser. For maximum compatibility, convert to MP4 (H.264/AAC) and re-upload.");
       } finally {
         setLoading(false);
