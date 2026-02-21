@@ -484,37 +484,71 @@
       return `${mins}:${String(rem).padStart(2, "0")}`;
     }
 
+    async function wakeExtractionServer() {
+      if (!FRAME_EXTRACT_API_BASE) return;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45000);
+      try {
+        await fetch(`${FRAME_EXTRACT_API_BASE}/health`, { method: "GET", signal: controller.signal });
+      } catch (err) {
+        // Best-effort warm-up only.
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
     async function processVideoViaApi(file) {
       const formData = new FormData();
       formData.append("video", file);
 
-      setStatus("Uploading video to extraction server...");
-      setLoading(true, "Uploading video...");
+      setStatus("Waking extraction server...");
+      setLoading(true, "Preparing extraction server...");
       renderFrameSkeletons(5);
+      await wakeExtractionServer();
 
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 240000);
+      const runApiCall = async () => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 300000);
+        try {
+          setStatus("Uploading video to extraction server...");
+          setLoading(true, "Uploading and extracting...");
+
+          const response = await fetch(`${FRAME_EXTRACT_API_BASE}/api/extract-last-frames`, {
+            method: "POST",
+            body: formData,
+            signal: controller.signal
+          });
+
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            const detail = payload && payload.detail ? payload.detail : "Server extraction failed.";
+            throw new Error(detail);
+          }
+
+          const frames = (payload.frames || []).map((f, idx) => ({
+            dataUrl: f.data_url,
+            timeLabel: f.time_label || formatTime(f.time_seconds || idx)
+          }));
+
+          if (!frames.length) {
+            throw new Error("No frames returned by extraction server.");
+          }
+
+          return frames;
+        } finally {
+          clearTimeout(timeout);
+        }
+      };
 
       try {
-        const response = await fetch(`${FRAME_EXTRACT_API_BASE}/api/extract-last-frames`, {
-          method: "POST",
-          body: formData,
-          signal: controller.signal
-        });
-
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          const detail = payload && payload.detail ? payload.detail : "Server extraction failed.";
-          throw new Error(detail);
-        }
-
-        const frames = (payload.frames || []).map((f, idx) => ({
-          dataUrl: f.data_url,
-          timeLabel: f.time_label || formatTime(f.time_seconds || idx)
-        }));
-
-        if (!frames.length) {
-          throw new Error("No frames returned by extraction server.");
+        let frames;
+        try {
+          frames = await runApiCall();
+        } catch (firstErr) {
+          setStatus("Server is starting up. Retrying extraction...");
+          setLoading(true, "Retrying extraction...");
+          await wakeExtractionServer();
+          frames = await runApiCall();
         }
 
         renderFrames(frames);
@@ -525,7 +559,6 @@
         setStatus(`Server extraction failed: ${err.message}. Falling back to browser extraction...`);
         await processVideoInBrowser(file);
       } finally {
-        clearTimeout(timeout);
         setLoading(false);
       }
     }
@@ -598,6 +631,11 @@
       const file = event.target.files && event.target.files[0];
       processVideo(file);
     });
+
+    // Pre-warm free-tier backend to reduce first-request failures.
+    if (FRAME_EXTRACT_API_BASE) {
+      wakeExtractionServer();
+    }
   </script>
 </body>
 </html>
