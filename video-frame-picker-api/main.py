@@ -80,6 +80,35 @@ def _format_time(seconds: float) -> str:
     return f"{mins}:{rem:02d}"
 
 
+def _extract_frames(video_path: Path, times: List[float], work_dir: Path) -> List[dict]:
+    frames = []
+    for idx, t in enumerate(times, start=1):
+        frame_path = work_dir / f"frame-{idx}.png"
+        _run_cmd(
+            [
+                "ffmpeg",
+                "-y",
+                "-ss",
+                str(t),
+                "-i",
+                str(video_path),
+                "-frames:v",
+                "1",
+                str(frame_path),
+            ]
+        )
+        data = frame_path.read_bytes()
+        b64 = base64.b64encode(data).decode("ascii")
+        frames.append(
+            {
+                "data_url": f"data:image/png;base64,{b64}",
+                "time_seconds": round(t, 3),
+                "time_label": _format_time(t),
+            }
+        )
+    return frames
+
+
 @app.get("/health")
 def health() -> dict:
     return {"ok": True, "service": APP_NAME}
@@ -102,57 +131,40 @@ async def extract_last_frames(video: UploadFile = File(...)) -> dict:
             raise HTTPException(status_code=413, detail=f"File too large. Max {MAX_UPLOAD_MB}MB")
 
         try:
-            _run_cmd(
-                [
-                    "ffmpeg",
-                    "-y",
-                    "-i",
-                    str(input_path),
-                    "-map",
-                    "0:v:0",
-                    "-c:v",
-                    "libx264",
-                    "-pix_fmt",
-                    "yuv420p",
-                    "-movflags",
-                    "+faststart",
-                    str(normalized_path),
-                ]
-            )
-
-            duration = _probe_duration(normalized_path)
+            duration = _probe_duration(input_path)
             times = _build_times(duration, count=5)
-
-            frames = []
-            for idx, t in enumerate(times, start=1):
-                frame_path = tmp_dir / f"frame-{idx}.png"
+            try:
+                frames = _extract_frames(input_path, times, tmp_dir)
+                engine = "ffmpeg-direct"
+            except Exception:
                 _run_cmd(
                     [
                         "ffmpeg",
                         "-y",
-                        "-ss",
-                        str(t),
                         "-i",
+                        str(input_path),
+                        "-map",
+                        "0:v:0",
+                        "-c:v",
+                        "libx264",
+                        "-preset",
+                        "veryfast",
+                        "-pix_fmt",
+                        "yuv420p",
+                        "-movflags",
+                        "+faststart",
                         str(normalized_path),
-                        "-frames:v",
-                        "1",
-                        str(frame_path),
                     ]
                 )
 
-                data = frame_path.read_bytes()
-                b64 = base64.b64encode(data).decode("ascii")
-                frames.append(
-                    {
-                        "data_url": f"data:image/png;base64,{b64}",
-                        "time_seconds": round(t, 3),
-                        "time_label": _format_time(t),
-                    }
-                )
+                duration = _probe_duration(normalized_path)
+                times = _build_times(duration, count=5)
+                frames = _extract_frames(normalized_path, times, tmp_dir)
+                engine = "ffmpeg-transcode-fallback"
 
             return {
                 "ok": True,
-                "engine": "ffmpeg",
+                "engine": engine,
                 "duration_seconds": round(duration, 3),
                 "frames": frames,
             }
