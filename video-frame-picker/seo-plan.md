@@ -4,7 +4,7 @@
 Rank for high-intent queries around final frame extraction and video frame download in US and UK markets.
 
 ## Primary keyword
-- final frame extract
+- final frame
 
 ## Secondary keyword clusters
 - Brand: final frame, finalframe, lastframe
@@ -41,7 +41,7 @@ Rank for high-intent queries around final frame extraction and video frame downl
 ## KPI tracking (next)
 - Google Search Console: impressions, clicks, CTR for primary cluster.
 - Track rankings for:
-  - final frame extract
+  - final frame
   - final frame extractor
   - extract last frame of video
   - video frame extractor
