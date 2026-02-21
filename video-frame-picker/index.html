@@ -3,186 +3,274 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Free Video Last Frame Extractor - Download Last 5 Frames</title>
-  <meta name="description" content="Upload a video and instantly extract the last 5 frames. Click any frame to download as PNG. Free, fast, and runs in your browser." />
+  <title>Final Frame | Lastframe.video - Free Video Last Frame Extractor</title>
+  <meta name="description" content="Final frame tool by Lastframe.video. Upload a video, extract the last 5 frames, and download any frame instantly. Free online video frame extractor for US and UK creators." />
   <meta name="robots" content="index,follow" />
-  <link rel="canonical" href="https://example.com/" />
+  <link rel="canonical" href="https://finalframe.video/" />
+  <meta name="keywords" content="final frame, final frame extractor, finalframe, last frame extractor, extract last frame of video, get last frame of video, video frame extractor, extract frames from video, extract frame from video, video to frames, video frame grabber, frame extractor from video, frame downloader, mp4 frame extractor, video frame downloader, save video frame, frame capture, frame extraction, extract frames from video online, get frames from video, capture frame from video, frame by frame capture, save video frame by frame, ai video start and end frame, first frame to last frame ai" />
 
-  <meta property="og:title" content="Free Video Last Frame Extractor" />
-  <meta property="og:description" content="Upload video, preview last 5 frames, click to download." />
+  <meta property="og:title" content="Final Frame - Free Video Frame Extractor" />
+  <meta property="og:description" content="Upload video, get last 5 frames, and download in one click. Fast browser-based frame extraction." />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://example.com/" />
+  <meta property="og:url" content="https://finalframe.video/" />
+  <meta property="og:site_name" content="Lastframe.video" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Free Video Last Frame Extractor" />
-  <meta name="twitter:description" content="Upload video, preview last 5 frames, click to download." />
+  <meta name="twitter:title" content="Final Frame - Lastframe.video" />
+  <meta name="twitter:description" content="Free video frame extractor: upload video, extract last 5 frames, download any frame." />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: "#161237",
+            violet: {
+              50: "#f5f1ff",
+              100: "#ebe3ff",
+              200: "#dacbff",
+              300: "#bfa7ff",
+              400: "#9c77ff",
+              500: "#7a48ff",
+              600: "#642ef4",
+              700: "#5420db",
+              800: "#471eb0"
+            }
+          },
+          boxShadow: {
+            glow: "0 20px 45px rgba(83, 35, 209, 0.2)"
+          }
+        }
+      }
+    };
+  </script>
 
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "Free Video Last Frame Extractor",
-    "applicationCategory": "MultimediaApplication",
-    "operatingSystem": "Any",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
-    },
-    "description": "Upload a video and extract the last five frames instantly in your browser."
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "name": "Lastframe.video",
+        "url": "https://finalframe.video/"
+      },
+      {
+        "@type": "SoftwareApplication",
+        "name": "Final Frame",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "Web",
+        "url": "https://finalframe.video/",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "description": "Free online video frame extractor to capture and download the last frames from uploaded videos."
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How do I extract the final frame from a video without editing software?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Upload your file, wait for the final five frames to be generated, and click the one you want. The frame is downloaded as a PNG image for immediate use."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is Lastframe.video free for final frame extraction?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. The tool is free and optimized for fast final-frame workflows."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does this work for MP4 and WebM?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes in most cases, as long as the browser supports the codec in the source file."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I use this as a video frame grabber or video frame downloader?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. This tool behaves like a video frame grabber for the final sequence and lets you download selected frames as PNG images."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How is this different from extract frames from video online tools?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Many tools export every frame from the full timeline. Lastframe.video focuses on the last frames so you can move faster when your goal is final shot selection or continuity."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can this help with AI video start and end frame workflows?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Teams often reuse the last frame from one clip as a reference to start the next generated clip and maintain style continuity."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I capture frame from video on mobile browsers?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Usually yes on modern devices, provided the browser supports the uploaded format and codec."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does this support video URL to frames conversion?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. This version works with local file upload. URL ingestion can be added later as a separate feature."
+            }
+          }
+        ]
+      }
+    ]
   }
   </script>
 
   <style>
-    :root {
-      --bg: #f6f7fb;
-      --card: #ffffff;
-      --text: #141922;
-      --muted: #5b6473;
-      --accent: #0f766e;
-      --accent-2: #0b5e57;
-      --border: #dbe1ea;
-      --shadow: 0 10px 30px rgba(16, 24, 40, 0.08);
-      --radius: 14px;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-      color: var(--text);
-      background: radial-gradient(circle at top right, #e9f7f4, transparent 40%), var(--bg);
-      line-height: 1.5;
-    }
-
-    .wrap {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 24px;
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 20px;
-    }
-
-    h1 {
-      margin: 0 0 8px;
-      font-size: clamp(1.5rem, 2.7vw, 2.4rem);
-      line-height: 1.2;
-    }
-
-    p {
-      margin: 0 0 16px;
-      color: var(--muted);
-    }
-
-    .upload-box {
-      border: 2px dashed #b8c4d6;
-      border-radius: 12px;
-      padding: 16px;
-      background: #fbfdff;
-    }
-
-    input[type="file"] {
-      width: 100%;
-    }
-
-    .note {
-      font-size: 0.92rem;
-      color: var(--muted);
-      margin-top: 8px;
-    }
-
-    .status {
-      margin-top: 12px;
-      color: var(--accent-2);
-      font-weight: 600;
-      min-height: 24px;
-    }
-
-    .frames {
-      margin-top: 18px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 12px;
-    }
-
-    .frame-btn {
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 8px;
-      background: white;
-      text-align: left;
-      cursor: pointer;
-      transition: transform 0.16s ease, box-shadow 0.16s ease;
-    }
-
-    .frame-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
-    }
-
-    .frame-btn img {
-      width: 100%;
-      height: auto;
-      display: block;
-      border-radius: 8px;
-      border: 1px solid #edf1f7;
-      background: #f5f7fa;
-    }
-
-    .frame-label {
-      margin-top: 6px;
-      font-size: 0.88rem;
-      color: #3d4655;
-    }
-
-    .hidden-video {
-      position: absolute;
-      left: -9999px;
-      width: 1px;
-      height: 1px;
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    footer {
-      margin-top: 22px;
-      font-size: 0.85rem;
-      color: var(--muted);
+    .page-bg {
+      background:
+        radial-gradient(900px 400px at 8% -8%, rgba(125, 72, 255, 0.24), transparent 55%),
+        radial-gradient(800px 380px at 100% 0, rgba(210, 189, 255, 0.35), transparent 60%),
+        #f7f4ff;
     }
   </style>
 </head>
-<body>
-  <main class="wrap">
-    <section class="card">
-      <h1>Free Video Last 5 Frames Extractor</h1>
-      <p>Upload your video, preview the final five frames, and click any frame to download it as PNG.</p>
+<body class="page-bg text-ink antialiased">
+  <div class="mx-auto my-4 max-w-[1280px] rounded-3xl border border-violet-200 bg-white shadow-glow">
+    <section class="min-h-screen rounded-3xl bg-gradient-to-b from-violet-50 via-white to-white px-6 py-6 md:px-10">
+      <header class="flex flex-wrap items-center justify-between gap-4">
+        <a href="#top" class="inline-flex items-center gap-3 font-extrabold tracking-wide text-ink">
+          <span class="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 text-lg text-white shadow-md">L</span>
+          <span>LASTFRAME.VIDEO</span>
+        </a>
+        <nav class="hidden items-center gap-6 text-sm font-semibold text-violet-800 md:flex">
+          <a href="#extractor" class="hover:text-violet-600">Extractor</a>
+          <a href="#use-cases" class="hover:text-violet-600">Use Cases</a>
+          <a href="#faq" class="hover:text-violet-600">FAQs</a>
+        </nav>
+        <a href="#extractor" class="rounded-full border border-violet-300 bg-white px-5 py-2.5 text-sm font-bold text-violet-800 transition hover:border-violet-500 hover:text-violet-600">Open Tool</a>
+      </header>
 
-      <div class="upload-box">
-        <label for="videoInput"><strong>Select a video file</strong></label>
-        <input id="videoInput" type="file" accept="video/*" />
-        <p class="note">Works best with browser-supported formats like MP4/WebM. No upload to server: processing happens in your browser.</p>
+      <div id="top" class="mx-auto mt-14 max-w-5xl text-center md:mt-16">
+        <p class="text-sm font-bold uppercase tracking-[0.22em] text-violet-700">Final Frame Extractor</p>
+        <h1 class="mt-4 text-4xl font-black leading-tight text-ink sm:text-5xl md:text-7xl">
+          Extract Your
+          <span class="text-violet-600">Last 5 Frames</span>
+        </h1>
+        <p class="mx-auto mt-6 max-w-2xl text-lg text-violet-900/75 md:text-xl">
+          A fast, browser-based video frame extractor for creators who need the final frame for continuity, thumbnails, and AI video start-end workflows.
+        </p>
+
+        <div id="extractor" class="mx-auto mt-8 rounded-2xl border border-violet-200 bg-white p-5 text-left shadow-sm md:p-7">
+          <p class="text-base text-violet-800/80 md:text-lg">Upload a video file to generate the last five frames. Click any thumbnail to download as PNG.</p>
+          <div class="mt-4 rounded-2xl border-2 border-dashed border-violet-300 bg-violet-50 p-4 md:p-6">
+            <label for="videoInput" class="text-4xl font-black leading-tight text-ink md:text-5xl">Select a video file</label>
+            <input id="videoInput" type="file" accept="video/*" class="mt-4 block w-full rounded-lg border border-violet-200 bg-white p-2.5 text-sm text-violet-900 file:mr-4 file:rounded-md file:border-0 file:bg-violet-600 file:px-4 file:py-2 file:font-semibold file:text-white hover:file:bg-violet-700" />
+            <p class="mt-3 text-sm text-violet-900/70">Best results with browser-supported MP4/WebM formats. Processing happens in your browser.</p>
+          </div>
+
+          <div class="mt-4 flex justify-center">
+            <label for="videoInput" class="inline-flex cursor-pointer items-center rounded-full bg-violet-600 px-8 py-3 text-sm font-bold text-white shadow-lg shadow-violet-500/30 transition hover:bg-violet-700">Upload Video</label>
+          </div>
+        </div>
+
+        <div id="status" class="mx-auto mt-4 min-h-[1.5rem] max-w-4xl text-left text-sm font-bold text-violet-700" aria-live="polite"></div>
+        <div id="frames" class="mx-auto mt-4 grid max-w-5xl gap-3 text-left sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5"></div>
+
+        <div class="mt-8 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-violet-800/85">
+          <span class="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5">MP4</span>
+          <span class="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5">WebM</span>
+          <span class="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5">PNG Download</span>
+          <span class="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5">No Server Upload</span>
+        </div>
       </div>
-
-      <div id="status" class="status" aria-live="polite"></div>
-      <div id="frames" class="frames"></div>
     </section>
 
-    <footer>
-      Tip: For SEO, replace <code>https://example.com/</code> in this file with your real domain before going live.
-    </footer>
-  </main>
+    <main class="space-y-4 bg-violet-50/50 px-4 pb-8 pt-4 md:px-10">
+      <section id="use-cases" class="grid gap-4 md:grid-cols-2">
+        <article class="rounded-2xl border border-violet-200 bg-white p-6">
+          <h2 class="text-2xl font-black text-ink">When to use this tool</h2>
+          <p class="mt-3 text-violet-900/75">This tool is ideal when you need the ending visual from a clip without opening a heavy editor. It is useful for continuity checks, quick approvals, and final-frame handoff into the next creative step.</p>
+          <p class="mt-3 text-violet-900/75">Many teams use the last frame from one clip as a reference for the next generated shot, especially in AI workflows where visual consistency matters.</p>
+        </article>
 
-  <video id="video" class="hidden-video" preload="metadata" muted playsinline></video>
-  <canvas id="canvas" style="display:none;"></canvas>
+        <article class="rounded-2xl border border-violet-200 bg-white p-6">
+          <h2 class="text-2xl font-black text-ink">Popular use cases</h2>
+          <p class="mt-3 text-violet-900/75">Use extracted frames for thumbnail testing, storyboard references, presentation decks, or as a frame downloader for social assets. The final five-frame view gives better selection control than a single auto-captured still.</p>
+          <p class="mt-3 text-violet-900/75">It is also practical for rapid export-review loops where speed and visual continuity are both important.</p>
+        </article>
+      </section>
+
+      <section id="faq" class="rounded-2xl border border-violet-200 bg-white p-6">
+        <h2 class="text-2xl font-black text-ink">FAQ</h2>
+
+        <div class="mt-4 space-y-5 text-violet-900/80">
+          <div>
+            <h3 class="text-lg font-extrabold text-ink">How do I extract the final frame from a video without editing software?</h3>
+            <p class="mt-1">Upload your video, wait for the final five frames, and click the frame you want. It downloads as PNG for immediate use.</p>
+          </div>
+          <div>
+            <h3 class="text-lg font-extrabold text-ink">Is Lastframe.video free for final frame extraction?</h3>
+            <p class="mt-1">Yes. The tool is free and optimized for fast final-frame extraction and download.</p>
+          </div>
+          <div>
+            <h3 class="text-lg font-extrabold text-ink">Does this work with MP4 and WebM?</h3>
+            <p class="mt-1">In most cases yes, as long as your browser supports the codec in the uploaded file.</p>
+          </div>
+          <div>
+            <h3 class="text-lg font-extrabold text-ink">Are videos uploaded to a server?</h3>
+            <p class="mt-1">No. This page processes frames in your browser so uploads are not required for extraction.</p>
+          </div>
+          <div>
+            <h3 class="text-lg font-extrabold text-ink">Can I use this as a video frame grabber or video frame downloader?</h3>
+            <p class="mt-1">Yes. It works as a focused frame grabber for the end of your clip and allows one-click PNG download for each extracted frame.</p>
+          </div>
+          <div>
+            <h3 class="text-lg font-extrabold text-ink">How is this different from full video to frames tools?</h3>
+            <p class="mt-1">Full extraction tools process entire timelines. This tool is intentionally optimized for final-frame extraction, which is faster when you only need the ending sequence.</p>
+          </div>
+          <div>
+            <h3 class="text-lg font-extrabold text-ink">Can this support AI start frame and end frame continuity?</h3>
+            <p class="mt-1">Yes. Many creators use the last frame from one generation as the first reference for the next clip to reduce abrupt transitions and keep composition stable.</p>
+          </div>
+          <div>
+            <h3 class="text-lg font-extrabold text-ink">Is this useful for save video frame, frame capture, and frame extraction tasks?</h3>
+            <p class="mt-1">Yes. Whether you call it frame capture, frame extraction, or save video frame workflow, the output is a downloadable PNG that can be reused in edits, decks, or prompts.</p>
+          </div>
+          <div>
+            <h3 class="text-lg font-extrabold text-ink">Can I get frames from video on mobile?</h3>
+            <p class="mt-1">Usually yes, as long as the uploaded file codec is supported by your mobile browser. MP4 and WebM generally provide the best compatibility.</p>
+          </div>
+          <div>
+            <h3 class="text-lg font-extrabold text-ink">Does this support video URL to frames?</h3>
+            <p class="mt-1">Not in this version. You currently upload a local file from device storage for faster and simpler browser-side processing.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="px-6 pb-8 text-center text-sm font-medium text-violet-900/70 md:px-10">
+      Lastframe.video: free final frame extractor and video frame downloader for creators in the US, UK, and globally.
+    </footer>
+  </div>
+
+  <video id="video" class="absolute left-[-9999px] h-px w-px opacity-0 pointer-events-none" preload="metadata" muted playsinline></video>
+  <canvas id="canvas" class="hidden"></canvas>
 
   <script>
     const videoInput = document.getElementById("videoInput");
@@ -257,13 +345,13 @@
       framesEl.innerHTML = "";
       frames.forEach((frame, idx) => {
         const btn = document.createElement("button");
-        btn.className = "frame-btn";
+        btn.className = "rounded-xl border border-violet-200 bg-white p-2 text-left transition hover:-translate-y-0.5 hover:shadow-md";
         btn.type = "button";
         btn.setAttribute("aria-label", `Download frame ${idx + 1}`);
 
         btn.innerHTML = `
-          <img src="${frame.dataUrl}" alt="Video frame at ${frame.timeLabel}" />
-          <div class="frame-label">${frame.timeLabel} (click to download)</div>
+          <img src="${frame.dataUrl}" alt="Video frame at ${frame.timeLabel}" class="block w-full rounded-lg border border-violet-100 bg-violet-50" />
+          <div class="mt-2 text-xs font-semibold text-violet-900">${frame.timeLabel} (click to download)</div>
         `;
 
         btn.addEventListener("click", () => {
