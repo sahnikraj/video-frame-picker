@@ -98,28 +98,68 @@ def _get_frame_encoding() -> tuple[str, str, List[str]]:
     return ".jpg", "image/jpeg", ["-q:v", str(jpeg_quality)]
 
 
+def _extract_frame_at_time(video_path: Path, t: float, frame_path: Path, encoding_args: List[str]) -> None:
+    ffmpeg_cmd: List[str] = [
+        "ffmpeg",
+        "-y",
+        "-ss",
+        str(t),
+        "-i",
+        str(video_path),
+        "-frames:v",
+        "1",
+    ]
+    if MAX_FRAME_WIDTH > 0:
+        ffmpeg_cmd.extend(["-vf", f"scale=min(iw\\,{MAX_FRAME_WIDTH}):-2"])
+    ffmpeg_cmd.extend(encoding_args)
+    ffmpeg_cmd.append(str(frame_path))
+    _run_cmd(ffmpeg_cmd)
+
+
 def _extract_frames(video_path: Path, times: List[float], work_dir: Path) -> List[dict]:
     ext, mime_type, encoding_args = _get_frame_encoding()
+    output_pattern = work_dir / f"batch-frame-%02d{ext}"
+    ffmpeg_cmd: List[str] = [
+        "ffmpeg",
+        "-y",
+        "-sseof",
+        "-2",
+        "-i",
+        str(video_path),
+        "-frames:v",
+        "5",
+    ]
+    vf_parts = ["fps=2"]
+    if MAX_FRAME_WIDTH > 0:
+        vf_parts.append(f"scale=min(iw\\,{MAX_FRAME_WIDTH}):-2")
+    ffmpeg_cmd.extend(["-vf", ",".join(vf_parts)])
+    ffmpeg_cmd.extend(encoding_args)
+    ffmpeg_cmd.append(str(output_pattern))
+
     frames = []
+    try:
+        _run_cmd(ffmpeg_cmd)
+    except Exception:
+        # Fallback for files where `-sseof` path is unsupported.
+        pass
+
+    batch_files = sorted(work_dir.glob(f"batch-frame-*{ext}"))
+    if len(batch_files) == 5:
+        for idx, (t, frame_path) in enumerate(zip(times, batch_files), start=1):
+            data = frame_path.read_bytes()
+            b64 = base64.b64encode(data).decode("ascii")
+            frames.append(
+                {
+                    "data_url": f"data:{mime_type};base64,{b64}",
+                    "time_seconds": round(t, 3),
+                    "time_label": _format_time(t),
+                }
+            )
+        return frames
+
     for idx, t in enumerate(times, start=1):
         frame_path = work_dir / f"frame-{idx}{ext}"
-        ffmpeg_cmd: List[str] = [
-            "ffmpeg",
-            "-y",
-            "-ss",
-            str(t),
-            "-i",
-            str(video_path),
-            "-frames:v",
-            "1",
-        ]
-        if MAX_FRAME_WIDTH > 0:
-            ffmpeg_cmd.extend(["-vf", f"scale=min(iw\\,{MAX_FRAME_WIDTH}):-2"])
-        ffmpeg_cmd.extend(encoding_args)
-        ffmpeg_cmd.append(str(frame_path))
-        _run_cmd(
-            ffmpeg_cmd
-        )
+        _extract_frame_at_time(video_path, t, frame_path, encoding_args)
         data = frame_path.read_bytes()
         b64 = base64.b64encode(data).decode("ascii")
         frames.append(
