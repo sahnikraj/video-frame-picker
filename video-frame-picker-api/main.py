@@ -163,7 +163,12 @@ def _extract_frames(video_path: Path, times: List[float], work_dir: Path) -> Lis
         pass
 
     batch_files = sorted(work_dir.glob(f"batch-frame-*{ext}"))
-    if len(batch_files) == 5:
+    if batch_files:
+        if len(batch_files) > 5:
+            batch_files = batch_files[-5:]
+        while len(batch_files) < 5:
+            batch_files.append(batch_files[-1])
+
         for idx, (t, frame_path) in enumerate(zip(times, batch_files), start=1):
             data = frame_path.read_bytes()
             b64 = base64.b64encode(data).decode("ascii")
@@ -178,8 +183,33 @@ def _extract_frames(video_path: Path, times: List[float], work_dir: Path) -> Lis
 
     for idx, t in enumerate(times, start=1):
         frame_path = work_dir / f"frame-{idx}{ext}"
-        _extract_frame_at_time(video_path, t, frame_path, encoding_args)
-        data = frame_path.read_bytes()
+        current_t = t
+        success = False
+        for _ in range(4):
+            try:
+                _extract_frame_at_time(video_path, current_t, frame_path, encoding_args)
+            except Exception:
+                pass
+            if frame_path.exists():
+                success = True
+                break
+            current_t = max(0.0, current_t - 0.15)
+
+        if success:
+            data = frame_path.read_bytes()
+        elif frames:
+            # Reuse prior frame if the final timestamp has no decodable frame.
+            frames.append(
+                {
+                    "data_url": frames[-1]["data_url"],
+                    "time_seconds": round(t, 3),
+                    "time_label": _format_time(t),
+                }
+            )
+            continue
+        else:
+            raise RuntimeError("Could not decode frames from video")
+
         b64 = base64.b64encode(data).decode("ascii")
         frames.append(
             {
