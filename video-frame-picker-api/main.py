@@ -101,6 +101,9 @@ def _get_frame_encoding() -> tuple[str, str, List[str]]:
 def _extract_frame_at_time(video_path: Path, t: float, frame_path: Path, encoding_args: List[str]) -> None:
     ffmpeg_cmd: List[str] = [
         "ffmpeg",
+        "-v",
+        "error",
+        "-hide_banner",
         "-y",
         "-ss",
         str(t),
@@ -110,7 +113,7 @@ def _extract_frame_at_time(video_path: Path, t: float, frame_path: Path, encodin
         "1",
     ]
     if MAX_FRAME_WIDTH > 0:
-        ffmpeg_cmd.extend(["-vf", f"scale=min(iw\\,{MAX_FRAME_WIDTH}):-2"])
+        ffmpeg_cmd.extend(["-vf", f"scale={MAX_FRAME_WIDTH}:-2:force_original_aspect_ratio=decrease"])
     ffmpeg_cmd.extend(encoding_args)
     ffmpeg_cmd.append(str(frame_path))
     _run_cmd(ffmpeg_cmd)
@@ -119,8 +122,15 @@ def _extract_frame_at_time(video_path: Path, t: float, frame_path: Path, encodin
 def _extract_frames(video_path: Path, times: List[float], work_dir: Path) -> List[dict]:
     ext, mime_type, encoding_args = _get_frame_encoding()
     output_pattern = work_dir / f"batch-frame-%02d{ext}"
+    start_time = times[0] if times else 0.0
+    end_time = times[-1] if times else 2.0
+    window = max(end_time - start_time, 0.1)
+    fps = max(2.0, min(12.0, (len(times) - 1) / window if len(times) > 1 else 2.0))
     ffmpeg_cmd: List[str] = [
         "ffmpeg",
+        "-v",
+        "error",
+        "-hide_banner",
         "-y",
         "-sseof",
         "-2",
@@ -129,9 +139,9 @@ def _extract_frames(video_path: Path, times: List[float], work_dir: Path) -> Lis
         "-frames:v",
         "5",
     ]
-    vf_parts = ["fps=2"]
+    vf_parts = [f"fps={fps:.3f}"]
     if MAX_FRAME_WIDTH > 0:
-        vf_parts.append(f"scale=min(iw\\,{MAX_FRAME_WIDTH}):-2")
+        vf_parts.append(f"scale={MAX_FRAME_WIDTH}:-2:force_original_aspect_ratio=decrease")
     ffmpeg_cmd.extend(["-vf", ",".join(vf_parts)])
     ffmpeg_cmd.extend(encoding_args)
     ffmpeg_cmd.append(str(output_pattern))
