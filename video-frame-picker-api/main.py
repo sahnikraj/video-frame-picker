@@ -95,7 +95,16 @@ def _get_frame_encoding() -> tuple[str, str, List[str]]:
 
     # JPEG: lower payload and faster response than PNG for preview thumbnails.
     jpeg_quality = max(2, min(FRAME_IMAGE_QUALITY, 31))
-    return ".jpg", "image/jpeg", ["-q:v", str(jpeg_quality)]
+    return ".jpg", "image/jpeg", [
+        "-c:v",
+        "mjpeg",
+        "-q:v",
+        str(jpeg_quality),
+        "-pix_fmt",
+        "yuvj420p",
+        "-strict",
+        "-2",
+    ]
 
 
 def _extract_frame_at_time(video_path: Path, t: float, frame_path: Path, encoding_args: List[str]) -> None:
