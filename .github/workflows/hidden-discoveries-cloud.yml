@@ -1,0 +1,68 @@
+name: Hidden Discoveries Cloud Run
+
+on:
+  schedule:
+    # 09:00 IST = 03:30 UTC
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-hidden-discoveries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_MODEL: gpt-4.1-mini
+      DISCOVERY_MODEL: gpt-4.1-mini
+      RESEARCH_MODEL: gpt-4.1-mini
+      DRAFT_MODEL: gpt-4.1-mini
+      OPENAI_TIMEOUT_SECONDS: '240'
+      OPENAI_MAX_RETRIES: '3'
+
+      GOOGLE_DRIVE_AUTH_MODE: oauth
+      GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+      GOOGLE_OAUTH_CLIENT_SECRET_FILE: ${{ github.workspace }}/secrets/google_oauth_client_secret.json
+      GOOGLE_OAUTH_TOKEN_FILE: ${{ github.workspace }}/secrets/google_oauth_token.json
+
+      STORY_COUNT_MIN: '5'
+      STORY_COUNT_MAX: '7'
+      LOOKBACK_DAYS: '7'
+      DISCOVERY_MAX_RETRIES: '4'
+      DISCOVERY_MIN_DISTINCT_DOMAINS: '4'
+      RESEARCH_MAX_RETRIES: '3'
+      DRAFT_MAX_CITATION_RETRIES: '3'
+      OVERWRITE_EXISTING: 'false'
+      OUTPUT_DIR: ${{ github.workspace }}/outputs/hidden_discoveries
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ops/requirements-hidden-discoveries.txt
+
+      - name: Materialize OAuth secret files
+        shell: bash
+        run: |
+          mkdir -p "${{ github.workspace }}/secrets"
+          printf '%s' '${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET_JSON }}' > "${{ github.workspace }}/secrets/google_oauth_client_secret.json"
+          printf '%s' '${{ secrets.GOOGLE_OAUTH_TOKEN_JSON }}' > "${{ github.workspace }}/secrets/google_oauth_token.json"
+
+      - name: Run hidden discoveries pipeline
+        run: |
+          python ops/hidden_discoveries_daily.py
+
+      - name: Upload run artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hidden-discoveries-output
+          path: outputs/hidden_discoveries
+          if-no-files-found: ignore
