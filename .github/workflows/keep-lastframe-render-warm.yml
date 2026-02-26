@@ -1,0 +1,22 @@
+name: Keep Lastframe Render Warm
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render health endpoint
+        env:
+          HEALTHCHECK_URL: ${{ vars.LASTFRAME_HEALTHCHECK_URL }}
+        run: |
+          set -euo pipefail
+          URL="${HEALTHCHECK_URL:-https://lastframe-extractor-api.onrender.com/health}"
+          echo "Pinging ${URL}"
+          curl -fsS --retry 3 --retry-delay 2 --max-time 20 \
+            -H "User-Agent: github-actions-keepalive/1.0" \
+            "${URL}" >/dev/null
+          echo "Ping succeeded."

@@ -630,6 +630,7 @@
 
     async function processVideo(file) {
       if (!file) return;
+      const warmupPromise = FRAME_EXTRACT_API_BASE ? wakeExtractionServer() : Promise.resolve();
       try {
         await processVideoInBrowser(file, { throwOnFailure: true });
         return;
@@ -641,6 +642,7 @@
       }
 
       try {
+        await warmupPromise;
         await processVideoViaApi(file);
       } catch (apiErr) {
         console.error(apiErr);
@@ -653,6 +655,11 @@
       const file = event.target.files && event.target.files[0];
       processVideo(file);
     });
+
+    // Warm in background to reduce fallback wait when browser decoding fails.
+    if (FRAME_EXTRACT_API_BASE) {
+      wakeExtractionServer();
+    }
 
   </script>
 </body>
