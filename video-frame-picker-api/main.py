@@ -13,6 +13,9 @@ from fastapi.middleware.cors import CORSMiddleware
 APP_NAME = "Lastframe Extractor API"
 MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", "200"))
 REQUEST_TIMEOUT_SEC = int(os.getenv("REQUEST_TIMEOUT_SEC", "180"))
+FRAME_IMAGE_FORMAT = os.getenv("FRAME_IMAGE_FORMAT", "jpeg").strip().lower()
+FRAME_IMAGE_QUALITY = int(os.getenv("FRAME_IMAGE_QUALITY", "4"))
+MAX_FRAME_WIDTH = int(os.getenv("MAX_FRAME_WIDTH", "1280"))
 
 raw_origins = os.getenv("ALLOWED_ORIGINS", "*").strip()
 if raw_origins == "*":
@@ -80,28 +83,48 @@ def _format_time(seconds: float) -> str:
     return f"{mins}:{rem:02d}"
 
 
+def _get_frame_encoding() -> tuple[str, str, List[str]]:
+    image_format = FRAME_IMAGE_FORMAT if FRAME_IMAGE_FORMAT in {"jpeg", "png", "webp"} else "jpeg"
+
+    if image_format == "png":
+        return ".png", "image/png", []
+
+    if image_format == "webp":
+        webp_quality = max(1, min(FRAME_IMAGE_QUALITY, 100))
+        return ".webp", "image/webp", ["-c:v", "libwebp", "-q:v", str(webp_quality)]
+
+    # JPEG: lower payload and faster response than PNG for preview thumbnails.
+    jpeg_quality = max(2, min(FRAME_IMAGE_QUALITY, 31))
+    return ".jpg", "image/jpeg", ["-q:v", str(jpeg_quality)]
+
+
 def _extract_frames(video_path: Path, times: List[float], work_dir: Path) -> List[dict]:
+    ext, mime_type, encoding_args = _get_frame_encoding()
     frames = []
     for idx, t in enumerate(times, start=1):
-        frame_path = work_dir / f"frame-{idx}.png"
+        frame_path = work_dir / f"frame-{idx}{ext}"
+        ffmpeg_cmd: List[str] = [
+            "ffmpeg",
+            "-y",
+            "-ss",
+            str(t),
+            "-i",
+            str(video_path),
+            "-frames:v",
+            "1",
+        ]
+        if MAX_FRAME_WIDTH > 0:
+            ffmpeg_cmd.extend(["-vf", f"scale=min(iw\\,{MAX_FRAME_WIDTH}):-2"])
+        ffmpeg_cmd.extend(encoding_args)
+        ffmpeg_cmd.append(str(frame_path))
         _run_cmd(
-            [
-                "ffmpeg",
-                "-y",
-                "-ss",
-                str(t),
-                "-i",
-                str(video_path),
-                "-frames:v",
-                "1",
-                str(frame_path),
-            ]
+            ffmpeg_cmd
         )
         data = frame_path.read_bytes()
         b64 = base64.b64encode(data).decode("ascii")
         frames.append(
             {
-                "data_url": f"data:image/png;base64,{b64}",
+                "data_url": f"data:{mime_type};base64,{b64}",
                 "time_seconds": round(t, 3),
                 "time_label": _format_time(t),
             }

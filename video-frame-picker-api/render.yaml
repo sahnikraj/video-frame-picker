@@ -11,5 +11,11 @@ services:
         value: "200"
       - key: REQUEST_TIMEOUT_SEC
         value: "180"
+      - key: FRAME_IMAGE_FORMAT
+        value: "jpeg"
+      - key: FRAME_IMAGE_QUALITY
+        value: "4"
+      - key: MAX_FRAME_WIDTH
+        value: "1280"
       - key: ALLOWED_ORIGINS
         value: "https://finalframe.video,https://deploy-preview-1--framepicker.netlify.app"

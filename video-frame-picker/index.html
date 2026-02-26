@@ -267,7 +267,7 @@
           <span class="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5">MP4</span>
           <span class="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5">WebM</span>
           <span class="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5">PNG Download</span>
-          <span class="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5">No Server Upload</span>
+          <span class="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5">Browser First</span>
         </div>
       </div>
     </section>
@@ -305,7 +305,7 @@
           </div>
           <div>
             <h3 class="text-lg font-extrabold text-ink">Are videos uploaded to a server?</h3>
-            <p class="mt-1">No. This page processes frames in your browser so uploads are not required for extraction.</p>
+            <p class="mt-1">Usually no. Extraction runs in your browser first, and only falls back to server extraction if your codec is unsupported.</p>
           </div>
           <div>
             <h3 class="text-lg font-extrabold text-ink">Can I use this as a video frame grabber or video frame downloader?</h3>
@@ -430,6 +430,13 @@
       link.remove();
     }
 
+    function extensionFromDataUrl(dataUrl) {
+      if (typeof dataUrl !== "string") return "png";
+      if (dataUrl.startsWith("data:image/jpeg")) return "jpg";
+      if (dataUrl.startsWith("data:image/webp")) return "webp";
+      return "png";
+    }
+
     function renderFrames(frames) {
       framesEl.innerHTML = "";
       frames.forEach((frame, idx) => {
@@ -444,7 +451,8 @@
         `;
 
         btn.addEventListener("click", () => {
-          downloadDataUrl(frame.dataUrl, `video-frame-${idx + 1}.png`);
+          const ext = extensionFromDataUrl(frame.dataUrl);
+          downloadDataUrl(frame.dataUrl, `video-frame-${idx + 1}.${ext}`);
         });
 
         framesEl.appendChild(btn);
@@ -501,10 +509,9 @@
       const formData = new FormData();
       formData.append("video", file);
 
-      setStatus("Waking extraction server...");
-      setLoading(true, "Preparing extraction server...");
+      setStatus("Preparing server extraction fallback...");
+      setLoading(true, "Preparing server extraction...");
       renderFrameSkeletons(5);
-      await wakeExtractionServer();
 
       const runApiCall = async () => {
         const controller = new AbortController();
@@ -556,14 +563,14 @@
       } catch (err) {
         console.error(err);
         framesEl.innerHTML = "";
-        setStatus(`Server extraction failed: ${err.message}. Falling back to browser extraction...`);
-        await processVideoInBrowser(file);
+        throw err;
       } finally {
         setLoading(false);
       }
     }
 
-    async function processVideoInBrowser(file) {
+    async function processVideoInBrowser(file, options = {}) {
+      const throwOnFailure = Boolean(options.throwOnFailure);
       if (!file) return;
 
       if (currentObjectUrl) {
@@ -612,7 +619,10 @@
         console.error(err);
         setLoading(false);
         framesEl.innerHTML = "";
-        setStatus("Could not decode this video in your browser. For maximum compatibility, convert to MP4 (H.264/AAC) and re-upload.");
+        setStatus("Browser extraction failed for this file. Trying server fallback...");
+        if (throwOnFailure) {
+          throw err;
+        }
       } finally {
         setLoading(false);
       }
@@ -620,11 +630,23 @@
 
     async function processVideo(file) {
       if (!file) return;
-      if (FRAME_EXTRACT_API_BASE) {
-        await processVideoViaApi(file);
+      try {
+        await processVideoInBrowser(file, { throwOnFailure: true });
         return;
+      } catch (browserErr) {
+        if (!FRAME_EXTRACT_API_BASE) {
+          setStatus("Could not decode this video in your browser. For best compatibility, convert to MP4 (H.264/AAC) and re-upload.");
+          return;
+        }
       }
-      await processVideoInBrowser(file);
+
+      try {
+        await processVideoViaApi(file);
+      } catch (apiErr) {
+        console.error(apiErr);
+        framesEl.innerHTML = "";
+        setStatus(`Server extraction failed: ${apiErr.message}. For best compatibility, convert to MP4 (H.264/AAC) and re-upload.`);
+      }
     }
 
     videoInput.addEventListener("change", (event) => {
@@ -632,10 +654,6 @@
       processVideo(file);
     });
 
-    // Pre-warm free-tier backend to reduce first-request failures.
-    if (FRAME_EXTRACT_API_BASE) {
-      wakeExtractionServer();
-    }
   </script>
 </body>
 </html>
