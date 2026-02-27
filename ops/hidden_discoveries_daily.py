@@ -192,6 +192,11 @@ def build_story_prompt(
 ) -> str:
     today = dt.date.today()
     start_date = today - dt.timedelta(days=lookback_days)
+    window_note = (
+        "Treat this as a 3-month lookback window."
+        if lookback_days == 90
+        else f"Treat this as a {lookback_days}-day lookback window."
+    )
     exclusion_note = ""
     if excluded_urls:
         short = excluded_urls[:20]
@@ -209,6 +214,7 @@ For each story, provide: title/headline, 1-2 sentence summary, source publicatio
 Aim for {min_count}-{max_count} distinct discoveries across archaeology, geology, paleontology, and environmental science.
 Hard constraints: Earth/Earth-history only, no generic astronomy, and strong fit to hidden-beneath/within/under theme.
 Time constraint: include ONLY stories published between {start_date.isoformat()} and {today.isoformat()} (last {lookback_days} days). Exclude anything older.
+{window_note}
 Source quality constraint:
 - Prefer reputable science/news/academic/government sources.
 - Avoid low-credibility, content-farm, or spam domains.
