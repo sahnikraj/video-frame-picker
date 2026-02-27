@@ -187,9 +187,17 @@ def call_openai(
         raise RuntimeError(f"Model did not return valid JSON. Output: {text[:500]}") from exc
 
 
-def build_story_prompt(min_count: int, max_count: int, lookback_days: int) -> str:
+def build_story_prompt(
+    min_count: int, max_count: int, lookback_days: int, excluded_urls: list[str] | None = None
+) -> str:
     today = dt.date.today()
     start_date = today - dt.timedelta(days=lookback_days)
+    exclusion_note = ""
+    if excluded_urls:
+        short = excluded_urls[:20]
+        exclusion_note = (
+            "\nDo not include these URLs again:\n- " + "\n- ".join(short)
+        )
     return f"""
 Give me a comprehensive list of discovery stories about something discovered hidden under, within, buried beneath, or submerged under something else.
 
@@ -204,6 +212,7 @@ Time constraint: include ONLY stories published between {start_date.isoformat()}
 Source quality constraint:
 - Prefer reputable science/news/academic/government sources.
 - Avoid low-credibility, content-farm, or spam domains.
+{exclusion_note}
 """.strip()
 
 
@@ -248,13 +257,14 @@ def discover_stories(
 
     max_attempts = env_int("DISCOVERY_MAX_RETRIES", 4)
     min_domains = env_int("DISCOVERY_MIN_DISTINCT_DOMAINS", 4)
-    last_stories: list[Story] = []
+    by_url: dict[str, Story] = {}
 
     for _ in range(max_attempts):
+        excluded_urls = list(by_url.keys())
         payload = call_openai(
             api_key=api_key,
             model=model,
-            prompt=build_story_prompt(min_count, max_count, lookback_days),
+            prompt=build_story_prompt(min_count, max_count, lookback_days, excluded_urls),
             schema_name="hidden_discoveries",
             schema=schema,
             use_web_search=True,
@@ -289,11 +299,21 @@ def discover_stories(
             filtered.append(item)
 
         distinct_domains = len({(urlparse(s.url).netloc or "").lower() for s in filtered})
-        last_stories = filtered
-        if len(filtered) >= min_count and distinct_domains >= min_domains:
-            return filtered[:max_count]
+        for story in filtered:
+            by_url[story.url] = story
 
-    return last_stories[:max_count]
+        aggregate = list(by_url.values())[:max_count]
+        agg_domains = len({(urlparse(s.url).netloc or "").lower() for s in aggregate})
+        if len(aggregate) >= min_count and agg_domains >= min_domains:
+            return aggregate
+
+    aggregate = list(by_url.values())[:max_count]
+    require_min = env_bool("DISCOVERY_REQUIRE_MIN_COUNT", True)
+    if require_min and len(aggregate) < min_count:
+        raise RuntimeError(
+            f"Discovery underfilled after retries: got {len(aggregate)} stories, need at least {min_count}."
+        )
+    return aggregate
 
 
 def build_research_prompt(story: Story, lookback_days: int) -> str:
