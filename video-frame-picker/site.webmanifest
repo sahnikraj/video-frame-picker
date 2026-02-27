@@ -1,0 +1,15 @@
+{
+  "name": "Lastframe.video",
+  "short_name": "Lastframe",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f1ff",
+  "theme_color": "#642ef4",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

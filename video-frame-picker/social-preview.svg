@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Lastframe.video social preview">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#f5f1ff"/>
+      <stop offset="100%" stop-color="#ebe3ff"/>
+    </linearGradient>
+    <linearGradient id="brand" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#7a48ff"/>
+      <stop offset="100%" stop-color="#471eb0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="78" y="78" width="1044" height="474" rx="34" fill="#ffffff" stroke="#dacbff" stroke-width="4"/>
+  <rect x="132" y="132" width="72" height="72" rx="16" fill="url(#brand)"/>
+  <path d="M154 150h11v29h22v11h-33z" fill="#fff"/>
+  <text x="228" y="176" fill="#161237" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700">LASTFRAME.VIDEO</text>
+  <text x="132" y="286" fill="#161237" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="800">Extract Last 5 Frames</text>
+  <text x="132" y="340" fill="#3c2f7a" font-family="Arial, Helvetica, sans-serif" font-size="32">Free online final frame extractor for AI videos.</text>
+  <text x="132" y="388" fill="#3c2f7a" font-family="Arial, Helvetica, sans-serif" font-size="32">Upload, preview, and download in seconds.</text>
+  <rect x="132" y="438" width="224" height="58" rx="29" fill="url(#brand)"/>
+  <text x="177" y="476" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700">Open Tool</text>
+</svg>
