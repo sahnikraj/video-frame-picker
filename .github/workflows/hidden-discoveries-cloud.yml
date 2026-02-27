@@ -4,6 +4,9 @@ on:
   schedule:
     # 09:00 IST = 03:30 UTC
     - cron: '30 3 * * *'
+    # Backup trigger in case of GitHub scheduler delay/drop.
+    # 09:15 IST = 03:45 UTC
+    - cron: '45 3 * * *'
   workflow_dispatch:
 
 jobs:
@@ -31,7 +34,7 @@ jobs:
       DISCOVERY_MIN_DISTINCT_DOMAINS: '4'
       RESEARCH_MAX_RETRIES: '3'
       DRAFT_MAX_CITATION_RETRIES: '3'
-      OVERWRITE_EXISTING: 'false'
+      OVERWRITE_EXISTING: 'true'
       OUTPUT_DIR: ${{ github.workspace }}/outputs/hidden_discoveries
 
     steps:
