@@ -255,7 +255,7 @@ def discover_stories(
         "required": ["stories"],
     }
 
-    max_attempts = env_int("DISCOVERY_MAX_RETRIES", 4)
+    max_attempts = env_int("DISCOVERY_MAX_RETRIES", 5)
     min_domains = env_int("DISCOVERY_MIN_DISTINCT_DOMAINS", 4)
     by_url: dict[str, Story] = {}
 
@@ -308,7 +308,7 @@ def discover_stories(
             return aggregate
 
     aggregate = list(by_url.values())[:max_count]
-    require_min = env_bool("DISCOVERY_REQUIRE_MIN_COUNT", True)
+    require_min = env_bool("DISCOVERY_REQUIRE_MIN_COUNT", False)
     if require_min and len(aggregate) < min_count:
         raise RuntimeError(
             f"Discovery underfilled after retries: got {len(aggregate)} stories, need at least {min_count}."
