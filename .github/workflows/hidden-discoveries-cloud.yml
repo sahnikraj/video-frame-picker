@@ -27,7 +27,7 @@ jobs:
       GOOGLE_OAUTH_CLIENT_SECRET_FILE: ${{ github.workspace }}/secrets/google_oauth_client_secret.json
       GOOGLE_OAUTH_TOKEN_FILE: ${{ github.workspace }}/secrets/google_oauth_token.json
 
-      STORY_COUNT_MIN: '20'
+      STORY_COUNT_MIN: '7'
       STORY_COUNT_MAX: '20'
       LOOKBACK_DAYS: '90'
       DISCOVERY_MAX_RETRIES: '5'
