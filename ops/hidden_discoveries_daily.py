@@ -436,6 +436,10 @@ Rules:
 - Keep an analytical and nuanced tone, not generic.
 - Stay on Earth/Earth-history context only.
 - Use multiple independent sources, not a single source rewrite.
+- Readability requirement:
+  - Flesch Reading Ease target: 60-75
+  - Aim for Grade 8-9 reading level
+  - Keep sentences concise and easy to skim on mobile
 - Citation quality constraints:
   - Every paragraph must have its own citation URL.
   - Avoid reusing the same citation URL for multiple paragraphs.
@@ -519,6 +523,56 @@ def collect_citation_urls(draft: Draft) -> list[str]:
     return urls
 
 
+def draft_plaintext(draft: Draft) -> str:
+    parts: list[str] = [draft.title, draft.intro]
+    for section in draft.sections:
+        parts.append(str(section.get("heading", "")))
+        for para in section.get("paragraphs", []):
+            parts.append(str(para.get("text", "")))
+    parts.append(draft.closing)
+    return "\n".join(p for p in parts if p).strip()
+
+
+def split_words(text: str) -> list[str]:
+    return re.findall(r"[A-Za-z]+(?:'[A-Za-z]+)?", text.lower())
+
+
+def split_sentences(text: str) -> list[str]:
+    raw = re.split(r"[.!?]+", text)
+    return [s.strip() for s in raw if s.strip()]
+
+
+def estimate_syllables(word: str) -> int:
+    w = re.sub(r"[^a-z]", "", word.lower())
+    if not w:
+        return 1
+    vowels = "aeiouy"
+    count = 0
+    prev_vowel = False
+    for ch in w:
+        is_vowel = ch in vowels
+        if is_vowel and not prev_vowel:
+            count += 1
+        prev_vowel = is_vowel
+    if w.endswith("e") and count > 1:
+        count -= 1
+    if w.endswith("le") and len(w) > 2 and w[-3] not in vowels:
+        count += 1
+    return max(1, count)
+
+
+def flesch_reading_ease(text: str) -> float:
+    words = split_words(text)
+    sentences = split_sentences(text)
+    if not words:
+        return 0.0
+    sentence_count = max(1, len(sentences))
+    syllables = sum(estimate_syllables(w) for w in words)
+    words_per_sentence = len(words) / sentence_count
+    syllables_per_word = syllables / len(words)
+    return 206.835 - (1.015 * words_per_sentence) - (84.6 * syllables_per_word)
+
+
 def citation_domain(url: str) -> str:
     try:
         return (urlparse(url).netloc or "").lower()
@@ -562,12 +616,16 @@ def generate_draft_with_research_retries(
         for item in research.evidence
         if str(item.get("citation_url", "")).strip()
     }
+    min_flesch = float(os.getenv("DRAFT_MIN_FLESCH", "60"))
+    max_flesch = float(os.getenv("DRAFT_MAX_FLESCH", "75"))
     for _ in range(max_attempts):
         candidate = generate_draft(api_key, model, story, research)
         last_draft = candidate
         candidate_urls = collect_citation_urls(candidate)
         urls_from_research = all((u in allowed_urls) for u in candidate_urls if u)
-        if draft_meets_citation_quality(candidate, story.url) and urls_from_research:
+        score = flesch_reading_ease(draft_plaintext(candidate))
+        readability_ok = min_flesch <= score <= max_flesch
+        if draft_meets_citation_quality(candidate, story.url) and urls_from_research and readability_ok:
             return candidate
     if last_draft is None:
         raise RuntimeError("Draft generation failed with no output.")
