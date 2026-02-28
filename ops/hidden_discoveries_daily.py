@@ -610,7 +610,8 @@ def generate_draft_with_research_retries(
     research: StoryResearch,
     max_attempts: int,
 ) -> Draft:
-    last_draft: Draft | None = None
+    best_draft: Draft | None = None
+    best_score: tuple[int, int, float, float] | None = None
     allowed_urls = {
         str(item.get("citation_url", "")).strip()
         for item in research.evidence
@@ -618,18 +619,33 @@ def generate_draft_with_research_retries(
     }
     min_flesch = float(os.getenv("DRAFT_MIN_FLESCH", "60"))
     max_flesch = float(os.getenv("DRAFT_MAX_FLESCH", "75"))
-    for _ in range(max_attempts):
+    attempts = max(1, min(max_attempts, 2))  # initial draft + max 1 retry
+    for _ in range(attempts):
         candidate = generate_draft(api_key, model, story, research)
-        last_draft = candidate
         candidate_urls = collect_citation_urls(candidate)
         urls_from_research = all((u in allowed_urls) for u in candidate_urls if u)
-        score = flesch_reading_ease(draft_plaintext(candidate))
-        readability_ok = min_flesch <= score <= max_flesch
-        if draft_meets_citation_quality(candidate, story.url) and urls_from_research and readability_ok:
-            return candidate
-    if last_draft is None:
+        citation_ok = draft_meets_citation_quality(candidate, story.url)
+        flesch = flesch_reading_ease(draft_plaintext(candidate))
+        if min_flesch <= flesch <= max_flesch:
+            readability_penalty = 0.0
+        elif flesch < min_flesch:
+            readability_penalty = min_flesch - flesch
+        else:
+            readability_penalty = flesch - max_flesch
+
+        # Maximize citation and source validity first, then readability closeness, then higher Flesch.
+        score = (
+            1 if citation_ok else 0,
+            1 if urls_from_research else 0,
+            -readability_penalty,
+            flesch,
+        )
+        if best_score is None or score > best_score:
+            best_score = score
+            best_draft = candidate
+    if best_draft is None:
         raise RuntimeError("Draft generation failed with no output.")
-    return last_draft
+    return best_draft
 
 
 def sanitize_filename(name: str) -> str:

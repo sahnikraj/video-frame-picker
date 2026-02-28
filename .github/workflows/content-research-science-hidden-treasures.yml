@@ -35,7 +35,7 @@ jobs:
       DISCOVERY_BATCH_SIZE: '5'
       DISCOVERY_REQUIRE_MIN_COUNT: 'false'
       RESEARCH_MAX_RETRIES: '3'
-      DRAFT_MAX_CITATION_RETRIES: '3'
+      DRAFT_MAX_CITATION_RETRIES: '2'
       OVERWRITE_EXISTING: 'true'
       OUTPUT_DIR: ${{ github.workspace }}/outputs/content_research/science_hidden_treasures
 
