@@ -8,6 +8,15 @@ on:
     # 09:15 IST = 03:45 UTC
     - cron: '45 3 * * *'
   workflow_dispatch:
+    inputs:
+      story_count_min:
+        description: "Minimum stories for this run"
+        required: false
+        default: "7"
+      story_count_max:
+        description: "Maximum stories for this run"
+        required: false
+        default: "20"
 
 jobs:
   science-hidden-treasures:
@@ -29,8 +38,8 @@ jobs:
       GOOGLE_OAUTH_CLIENT_SECRET_FILE: ${{ github.workspace }}/secrets/google_oauth_client_secret.json
       GOOGLE_OAUTH_TOKEN_FILE: ${{ github.workspace }}/secrets/google_oauth_token.json
 
-      STORY_COUNT_MIN: '7'
-      STORY_COUNT_MAX: '20'
+      STORY_COUNT_MIN: ${{ github.event.inputs.story_count_min || '7' }}
+      STORY_COUNT_MAX: ${{ github.event.inputs.story_count_max || '20' }}
       LOOKBACK_DAYS: '90'
       DISCOVERY_MAX_RETRIES: '5'
       DISCOVERY_MIN_DISTINCT_DOMAINS: '4'
