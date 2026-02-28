@@ -36,7 +36,7 @@ jobs:
       NANO_BANANA_IMAGE_SIZE: '1K'
 
       GOOGLE_DRIVE_AUTH_MODE: oauth
-      GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+      GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID_SCIENCE_ANIMAL_AMAZING_FACTS }}
       GOOGLE_OAUTH_CLIENT_SECRET_FILE: ${{ github.workspace }}/secrets/google_oauth_client_secret.json
       GOOGLE_OAUTH_TOKEN_FILE: ${{ github.workspace }}/secrets/google_oauth_token.json
 
@@ -75,7 +75,7 @@ jobs:
 
       - name: Run science animal amazing facts pipeline
         run: |
-          python ops/hidden_discoveries_daily.py
+          python ops/animal_amazing_facts_daily.py
 
       - name: Upload run artifacts
         if: always()
