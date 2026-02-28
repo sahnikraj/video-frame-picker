@@ -1,4 +1,4 @@
-name: Hidden Discoveries Cloud Run
+name: Content Research - Science_Hidden_Treasures
 
 on:
   schedule:
@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  run-hidden-discoveries:
+  science-hidden-treasures:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -37,7 +37,7 @@ jobs:
       RESEARCH_MAX_RETRIES: '3'
       DRAFT_MAX_CITATION_RETRIES: '3'
       OVERWRITE_EXISTING: 'true'
-      OUTPUT_DIR: ${{ github.workspace }}/outputs/hidden_discoveries
+      OUTPUT_DIR: ${{ github.workspace }}/outputs/content_research/science_hidden_treasures
 
     steps:
       - name: Checkout
@@ -60,7 +60,7 @@ jobs:
           printf '%s' '${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET_JSON }}' > "${{ github.workspace }}/secrets/google_oauth_client_secret.json"
           printf '%s' '${{ secrets.GOOGLE_OAUTH_TOKEN_JSON }}' > "${{ github.workspace }}/secrets/google_oauth_token.json"
 
-      - name: Run hidden discoveries pipeline
+      - name: Run science hidden treasures pipeline
         run: |
           python ops/hidden_discoveries_daily.py
 
@@ -68,6 +68,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: hidden-discoveries-output
-          path: outputs/hidden_discoveries
+          name: content-research-science-hidden-treasures-output
+          path: outputs/content_research/science_hidden_treasures
           if-no-files-found: ignore

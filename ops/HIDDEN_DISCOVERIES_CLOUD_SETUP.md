@@ -1,7 +1,7 @@
 # Hidden Discoveries Cloud Setup (GitHub Actions)
 
 Workflow file:
-- `.github/workflows/hidden-discoveries-cloud.yml`
+- `.github/workflows/content-research-science-hidden-treasures.yml`
 
 Schedule:
 - Daily at 09:00 IST (`03:30 UTC`)
@@ -22,7 +22,7 @@ Set these in: `GitHub repo -> Settings -> Secrets and variables -> Actions -> Ne
 ## One-time enablement
 1. Push this branch/workflow to GitHub.
 2. Add the 4 secrets above.
-3. Open `Actions -> Hidden Discoveries Cloud Run -> Run workflow` for first test.
+3. Open `Actions -> Content Research - Science_Hidden_Treasures -> Run workflow` for first test.
 4. Verify docs appear in your Drive folder.
 
 ## Notes
