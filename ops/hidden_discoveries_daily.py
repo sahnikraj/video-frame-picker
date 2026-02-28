@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import datetime as dt
 import json
 import os
@@ -25,6 +26,7 @@ from urllib.parse import urlparse
 
 try:
     from docx import Document
+    from docx.shared import Inches
 except Exception:
     print("Missing dependency: python-docx. Install with: pip install python-docx", file=sys.stderr)
     raise
@@ -45,6 +47,10 @@ except Exception:
     raise
 
 OPENAI_API_URL = "https://api.openai.com/v1/responses"
+NANO_BANANA_API_URL = (
+    "https://generativelanguage.googleapis.com/v1beta/models/"
+    "gemini-2.5-flash-image:generateContent"
+)
 DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive"]
 BLOCKED_DISCOVERY_DOMAINS = {
     "chasewaterdogs.co.uk",
@@ -64,7 +70,7 @@ class Story:
 @dataclass
 class Draft:
     ctr_headlines: list[str]
-    title: str
+    image_prompts: list[str]
     intro: str
     sections: list[dict[str, Any]]
     closing: str
@@ -423,7 +429,7 @@ Category: {story.category}
 
 Output structure:
 1) CTR headline options: generate exactly 3 high-CTR headline candidates
-2) Title
+2) Image prompts: generate exactly 3 image prompts tailored to this draft
 3) Intro paragraph (140-220 words)
 4) 6 to 8 sections. Each section must include:
    - heading
@@ -472,7 +478,12 @@ def generate_draft(api_key: str, model: str, story: Story, research: StoryResear
                 "maxItems": 3,
                 "items": {"type": "string"},
             },
-            "title": {"type": "string"},
+            "image_prompts": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": {"type": "string"},
+            },
             "intro": {"type": "string"},
             "sections": {
                 "type": "array",
@@ -506,7 +517,7 @@ def generate_draft(api_key: str, model: str, story: Story, research: StoryResear
         },
         "required": [
             "ctr_headlines",
-            "title",
+            "image_prompts",
             "intro",
             "sections",
             "closing",
@@ -525,7 +536,7 @@ def generate_draft(api_key: str, model: str, story: Story, research: StoryResear
 
     return Draft(
         ctr_headlines=[str(h).strip() for h in payload["ctr_headlines"]],
-        title=payload["title"].strip(),
+        image_prompts=[str(p).strip() for p in payload["image_prompts"]],
         intro=payload["intro"].strip(),
         sections=payload["sections"],
         closing=payload["closing"].strip(),
@@ -547,7 +558,7 @@ def collect_citation_urls(draft: Draft) -> list[str]:
 
 
 def draft_plaintext(draft: Draft) -> str:
-    parts: list[str] = [draft.title, draft.intro]
+    parts: list[str] = [*draft.ctr_headlines, *draft.image_prompts, draft.intro]
     for section in draft.sections:
         parts.append(str(section.get("heading", "")))
         for para in section.get("paragraphs", []):
@@ -677,6 +688,53 @@ def sanitize_filename(name: str) -> str:
     return (cleaned or "story")[:120]
 
 
+def generate_nano_banana_image(prompt: str, api_key: str, timeout_seconds: int) -> tuple[bytes, str]:
+    body = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"responseModalities": ["TEXT", "IMAGE"]},
+    }
+    req = urllib.request.Request(
+        f"{NANO_BANANA_API_URL}?key={api_key}",
+        data=json.dumps(body).encode("utf-8"),
+        method="POST",
+        headers={"Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=timeout_seconds) as resp:
+        payload = json.loads(resp.read().decode("utf-8"))
+
+    for candidate in payload.get("candidates", []):
+        for part in candidate.get("content", {}).get("parts", []):
+            inline = part.get("inlineData")
+            if inline and inline.get("data"):
+                mime = inline.get("mimeType", "image/png")
+                return base64.b64decode(inline["data"]), mime
+    raise RuntimeError("Nano Banana response did not include inline image data.")
+
+
+def write_generated_images(
+    output_dir: Path,
+    story: Story,
+    image_prompts: list[str],
+    api_key: str,
+) -> list[tuple[Path, str]]:
+    images_dir = output_dir / "generated_images"
+    images_dir.mkdir(parents=True, exist_ok=True)
+    timeout_seconds = env_int("NANO_BANANA_TIMEOUT_SECONDS", 180)
+    result: list[tuple[Path, str]] = []
+
+    for idx, prompt in enumerate(image_prompts, start=1):
+        data, mime = generate_nano_banana_image(prompt, api_key, timeout_seconds)
+        ext = ".png" if "png" in mime else ".jpg"
+        filename = (
+            f"{dt.datetime.now().strftime('%Y-%m-%d')}-"
+            f"{sanitize_filename(story.title)}-img{idx}{ext}"
+        )
+        path = images_dir / filename
+        path.write_bytes(data)
+        result.append((path, prompt))
+    return result
+
+
 def write_story_docx(output_dir: Path, story: Story, draft: Draft) -> Path:
     timestamp = dt.datetime.now().strftime("%Y-%m-%d")
     filename = f"{timestamp} - {sanitize_filename(story.title)}.docx"
@@ -687,8 +745,20 @@ def write_story_docx(output_dir: Path, story: Story, draft: Draft) -> Path:
     for idx, headline in enumerate(draft.ctr_headlines, start=1):
         document.add_paragraph(f"{idx}. {headline}")
     document.add_paragraph("")
-
-    document.add_heading(draft.title, level=1)
+    nano_banana_api_key = os.getenv("NANO_BANANA_API_KEY", "").strip()
+    if nano_banana_api_key and draft.image_prompts:
+        document.add_heading("Image Concepts", level=2)
+        generated_images = write_generated_images(
+            output_dir=output_dir,
+            story=story,
+            image_prompts=draft.image_prompts,
+            api_key=nano_banana_api_key,
+        )
+        for idx, (image_path, prompt) in enumerate(generated_images, start=1):
+            document.add_paragraph(f"Image {idx}")
+            document.add_picture(str(image_path), width=Inches(6.0))
+            document.add_paragraph(f"Prompt: {prompt}")
+            document.add_paragraph("")
 
     document.add_paragraph(draft.intro)
     document.add_paragraph(story.url)
