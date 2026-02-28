@@ -689,9 +689,17 @@ def sanitize_filename(name: str) -> str:
 
 
 def generate_nano_banana_image(prompt: str, api_key: str, timeout_seconds: int) -> tuple[bytes, str]:
+    aspect_ratio = os.getenv("NANO_BANANA_ASPECT_RATIO", "16:9").strip() or "16:9"
+    image_size = os.getenv("NANO_BANANA_IMAGE_SIZE", "1K").strip() or "1K"
     body = {
         "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"responseModalities": ["TEXT", "IMAGE"]},
+        "generationConfig": {
+            "responseModalities": ["TEXT", "IMAGE"],
+            "imageConfig": {
+                "aspectRatio": aspect_ratio,
+                "imageSize": image_size,
+            },
+        },
     }
     req = urllib.request.Request(
         f"{NANO_BANANA_API_URL}?key={api_key}",
