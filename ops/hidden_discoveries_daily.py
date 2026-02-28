@@ -63,6 +63,7 @@ class Story:
 
 @dataclass
 class Draft:
+    ctr_headlines: list[str]
     title: str
     intro: str
     sections: list[dict[str, Any]]
@@ -421,13 +422,14 @@ URL: {story.url}
 Category: {story.category}
 
 Output structure:
-1) Title
-2) Intro paragraph (140-220 words)
-3) 6 to 8 sections. Each section must include:
+1) CTR headline options: generate exactly 3 high-CTR headline candidates
+2) Title
+3) Intro paragraph (140-220 words)
+4) 6 to 8 sections. Each section must include:
    - heading
    - 2 paragraphs (each 110-170 words)
    - one citation URL for each paragraph
-4) Closing paragraph (120-180 words) + citation URL
+5) Closing paragraph (120-180 words) + citation URL
 
 Rules:
 - Use ONLY the research evidence provided below.
@@ -440,6 +442,13 @@ Rules:
   - Flesch Reading Ease target: 60-75
   - Aim for Grade 8-9 reading level
   - Keep sentences concise and easy to skim on mobile
+- Headline requirement:
+  - Use these style references for tone/structure only:
+    1) Egypt's 'lost golden city' resurfaces after 3,400 years and it's rewriting history
+    2) Geologists Find Strange Stone Tunnels That Could Point to a Never-Before-Seen Lifeform on Earth
+    3) Stonehenge mystery solved? Study reveals how 25-tonne stones reached the site in southern England
+  - Produce exactly 3 headline options.
+  - Keep them compelling but factual (no fabricated claims).
 - Citation quality constraints:
   - Every paragraph must have its own citation URL.
   - Avoid reusing the same citation URL for multiple paragraphs.
@@ -457,6 +466,12 @@ def generate_draft(api_key: str, model: str, story: Story, research: StoryResear
         "type": "object",
         "additionalProperties": False,
         "properties": {
+            "ctr_headlines": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": {"type": "string"},
+            },
             "title": {"type": "string"},
             "intro": {"type": "string"},
             "sections": {
@@ -489,7 +504,14 @@ def generate_draft(api_key: str, model: str, story: Story, research: StoryResear
             "closing": {"type": "string"},
             "closing_citation_url": {"type": "string"},
         },
-        "required": ["title", "intro", "sections", "closing", "closing_citation_url"],
+        "required": [
+            "ctr_headlines",
+            "title",
+            "intro",
+            "sections",
+            "closing",
+            "closing_citation_url",
+        ],
     }
 
     payload = call_openai(
@@ -502,6 +524,7 @@ def generate_draft(api_key: str, model: str, story: Story, research: StoryResear
     )
 
     return Draft(
+        ctr_headlines=[str(h).strip() for h in payload["ctr_headlines"]],
         title=payload["title"].strip(),
         intro=payload["intro"].strip(),
         sections=payload["sections"],
@@ -660,6 +683,11 @@ def write_story_docx(output_dir: Path, story: Story, draft: Draft) -> Path:
     path = output_dir / filename
 
     document = Document()
+    document.add_heading("CTR Headline Options", level=2)
+    for idx, headline in enumerate(draft.ctr_headlines, start=1):
+        document.add_paragraph(f"{idx}. {headline}")
+    document.add_paragraph("")
+
     document.add_heading(draft.title, level=1)
 
     document.add_paragraph(draft.intro)
