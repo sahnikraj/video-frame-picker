@@ -4,9 +4,6 @@ on:
   schedule:
     # 09:00 IST = 03:30 UTC
     - cron: '30 3 * * *'
-    # Backup trigger in case of GitHub scheduler delay/drop.
-    # 09:15 IST = 03:45 UTC
-    - cron: '45 3 * * *'
   workflow_dispatch:
     inputs:
       story_count_min:
