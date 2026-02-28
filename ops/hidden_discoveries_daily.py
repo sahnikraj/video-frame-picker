@@ -55,6 +55,15 @@ DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive"]
 BLOCKED_DISCOVERY_DOMAINS = {
     "chasewaterdogs.co.uk",
 }
+REFERENCE_DISCOVERY_HEADLINES = [
+    "Dragon Hole: Scientists found a huge ocean sinkhole hiding 1,700 strange viruses beneath the sea",
+    "Egypt's 'lost golden city' resurfaces after 3,400 years and it's rewriting history",
+    "A 2,000-year-old mystery solved: Archaeologists find Vitruvius' lost basilica in Italy",
+    "A 4,500-year-old journal explains how Egypt built the Great Pyramid of Giza",
+    "Long lost cave in New Zealand reveals million-year-old wildlife, extinct birds, and a Kakapo ancestor",
+    "4.4 billion-year-old mineral found in Australia reveals new clues about Earth's formation",
+    "Trapped in Antarctic ice for 66 years, body of British scientist Dennis Bell was recovered",
+]
 
 
 @dataclass
@@ -212,6 +221,7 @@ def build_story_prompt(
         exclusion_note = (
             "\nDo not include these URLs again:\n- " + "\n- ".join(short)
         )
+    reference_headlines = "\n- " + "\n- ".join(REFERENCE_DISCOVERY_HEADLINES)
     return f"""
 Give me a comprehensive list of discovery stories about something discovered hidden under, within, buried beneath, or submerged under something else.
 
@@ -227,6 +237,8 @@ Time constraint: include ONLY stories published between {start_date.isoformat()}
 Source quality constraint:
 - Prefer reputable science/news/academic/government sources.
 - Avoid low-credibility, content-farm, or spam domains.
+Reference examples (style/topic direction for what to find on the web):
+{reference_headlines}
 {exclusion_note}
 """.strip()
 
@@ -418,6 +430,9 @@ def research_story(api_key: str, model: str, story: Story, lookback_days: int) -
 
 def build_draft_prompt(story: Story, research: StoryResearch) -> str:
     evidence_json = json.dumps(research.evidence, ensure_ascii=True)
+    reference_headlines = "\n    ".join(
+        [f"{idx + 1}) {h}" for idx, h in enumerate(REFERENCE_DISCOVERY_HEADLINES)]
+    )
     return f"""
 Create a professional article draft for this story:
 Title: {story.title}
@@ -450,9 +465,7 @@ Rules:
   - Keep sentences concise and easy to skim on mobile
 - Headline requirement:
   - Use these style references for tone/structure only:
-    1) Egypt's 'lost golden city' resurfaces after 3,400 years and it's rewriting history
-    2) Geologists Find Strange Stone Tunnels That Could Point to a Never-Before-Seen Lifeform on Earth
-    3) Stonehenge mystery solved? Study reveals how 25-tonne stones reached the site in southern England
+    {reference_headlines}
   - Produce exactly 3 headline options.
   - Keep them compelling but factual (no fabricated claims).
 - Citation quality constraints:
