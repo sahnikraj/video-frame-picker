@@ -160,11 +160,22 @@ def call_openai(
     max_retries = env_int("OPENAI_MAX_RETRIES", 3)
     last_exc: Exception | None = None
     payload: dict[str, Any] | None = None
+    text: str = ""
     for attempt in range(1, max_retries + 1):
         try:
             with urllib.request.urlopen(req, timeout=timeout_seconds) as resp:
                 payload = json.loads(resp.read().decode("utf-8"))
-            break
+            text = response_output_text(payload)
+            if not text:
+                raise RuntimeError("OpenAI response did not contain text output.")
+            try:
+                return json.loads(text)
+            except json.JSONDecodeError as exc:
+                last_exc = exc
+                if attempt == max_retries:
+                    break
+                time.sleep(min(20, 2 * attempt))
+                continue
         except urllib.error.HTTPError as err:
             detail = err.read().decode("utf-8", errors="replace")
             raise RuntimeError(f"OpenAI API error ({err.code}): {detail}") from err
@@ -173,18 +184,9 @@ def call_openai(
             if attempt == max_retries:
                 break
             time.sleep(min(20, 2 * attempt))
-
     if payload is None:
         raise RuntimeError(f"OpenAI API request failed after {max_retries} attempts: {last_exc}")
-
-    text = response_output_text(payload)
-    if not text:
-        raise RuntimeError("OpenAI response did not contain text output.")
-
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(f"Model did not return valid JSON. Output: {text[:500]}") from exc
+    raise RuntimeError(f"Model did not return valid JSON. Output: {text[:500]}")
 
 
 def build_story_prompt(
@@ -225,52 +227,56 @@ Source quality constraint:
 def discover_stories(
     api_key: str, model: str, min_count: int, max_count: int, lookback_days: int
 ) -> list[Story]:
-    schema = {
-        "type": "object",
-        "additionalProperties": False,
-        "properties": {
-            "stories": {
-                "type": "array",
-                "minItems": min_count,
-                "maxItems": max_count,
-                "items": {
-                    "type": "object",
-                    "additionalProperties": False,
-                    "properties": {
-                        "title": {"type": "string"},
-                        "summary": {"type": "string"},
-                        "source": {"type": "string"},
-                        "date": {"type": "string"},
-                        "url": {"type": "string"},
-                        "category": {
-                            "type": "string",
-                            "enum": [
-                                "archaeology",
-                                "geology",
-                                "paleontology",
-                                "environmental_science",
-                                "climate_record",
-                                "mixed",
-                            ],
-                        },
-                    },
-                    "required": ["title", "summary", "source", "date", "url", "category"],
-                },
-            }
-        },
-        "required": ["stories"],
-    }
-
     max_attempts = env_int("DISCOVERY_MAX_RETRIES", 5)
     min_domains = env_int("DISCOVERY_MIN_DISTINCT_DOMAINS", 4)
+    batch_size = max(1, env_int("DISCOVERY_BATCH_SIZE", 5))
     by_url: dict[str, Story] = {}
 
     for _ in range(max_attempts):
+        remaining = max_count - len(by_url)
+        if remaining <= 0:
+            break
+        request_count = min(batch_size, remaining)
+        schema = {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "stories": {
+                    "type": "array",
+                    "minItems": request_count,
+                    "maxItems": request_count,
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "properties": {
+                            "title": {"type": "string"},
+                            "summary": {"type": "string"},
+                            "source": {"type": "string"},
+                            "date": {"type": "string"},
+                            "url": {"type": "string"},
+                            "category": {
+                                "type": "string",
+                                "enum": [
+                                    "archaeology",
+                                    "geology",
+                                    "paleontology",
+                                    "environmental_science",
+                                    "climate_record",
+                                    "mixed",
+                                ],
+                            },
+                        },
+                        "required": ["title", "summary", "source", "date", "url", "category"],
+                    },
+                }
+            },
+            "required": ["stories"],
+        }
         excluded_urls = list(by_url.keys())
         payload = call_openai(
             api_key=api_key,
             model=model,
-            prompt=build_story_prompt(min_count, max_count, lookback_days, excluded_urls),
+            prompt=build_story_prompt(request_count, request_count, lookback_days, excluded_urls),
             schema_name="hidden_discoveries",
             schema=schema,
             use_web_search=True,
