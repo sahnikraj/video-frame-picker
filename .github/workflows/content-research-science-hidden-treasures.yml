@@ -12,7 +12,7 @@ on:
       story_count_min:
         description: "Minimum stories for this run"
         required: false
-        default: "7"
+        default: "10"
       story_count_max:
         description: "Maximum stories for this run"
         required: false
@@ -25,7 +25,7 @@ jobs:
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       OPENAI_MODEL: gpt-4.1-mini
-      DISCOVERY_MODEL: gpt-4.1-mini
+      DISCOVERY_MODEL: gpt-5-mini
       RESEARCH_MODEL: gpt-4.1-mini
       DRAFT_MODEL: gpt-4.1-mini
       OPENAI_TIMEOUT_SECONDS: '240'
@@ -40,12 +40,14 @@ jobs:
       GOOGLE_OAUTH_CLIENT_SECRET_FILE: ${{ github.workspace }}/secrets/google_oauth_client_secret.json
       GOOGLE_OAUTH_TOKEN_FILE: ${{ github.workspace }}/secrets/google_oauth_token.json
 
-      STORY_COUNT_MIN: ${{ github.event.inputs.story_count_min || '7' }}
+      STORY_COUNT_MIN: ${{ github.event.inputs.story_count_min || '10' }}
       STORY_COUNT_MAX: ${{ github.event.inputs.story_count_max || '20' }}
-      LOOKBACK_DAYS: '90'
-      DISCOVERY_MAX_RETRIES: '5'
+      LOOKBACK_DAYS: '180'
+      DISCOVERY_MAX_RETRIES: '8'
       DISCOVERY_MIN_DISTINCT_DOMAINS: '4'
-      DISCOVERY_BATCH_SIZE: '5'
+      DISCOVERY_BATCH_SIZE: '8'
+      DISCOVERY_CATEGORY_SPLIT: 'true'
+      DISCOVERY_FALLBACK_LOOKBACK_DAYS: '180,240,365'
       DISCOVERY_REQUIRE_MIN_COUNT: 'false'
       RESEARCH_MAX_RETRIES: '3'
       DRAFT_MAX_CITATION_RETRIES: '2'

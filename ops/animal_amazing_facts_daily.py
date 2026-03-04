@@ -202,7 +202,11 @@ def call_openai(
 
 
 def build_story_prompt(
-    min_count: int, max_count: int, lookback_days: int, excluded_urls: list[str] | None = None
+    min_count: int,
+    max_count: int,
+    lookback_days: int,
+    excluded_urls: list[str] | None = None,
+    category_focus: str | None = None,
 ) -> str:
     today = dt.date.today()
     start_date = today - dt.timedelta(days=lookback_days)
@@ -216,6 +220,12 @@ def build_story_prompt(
         short = excluded_urls[:20]
         exclusion_note = (
             "\nDo not include these URLs again:\n- " + "\n- ".join(short)
+        )
+    category_focus_note = ""
+    if category_focus:
+        category_focus_note = (
+            f"\nPrioritize category focus for this call: {category_focus}. "
+            "If insufficient stories are available in that category, include nearby relevant categories."
         )
     reference_headlines = "\n- " + "\n- ".join(REFERENCE_DISCOVERY_HEADLINES)
     return f"""
@@ -246,6 +256,7 @@ Time constraint: include ONLY stories published between {start_date.isoformat()}
 Source quality constraint:
 - Prefer reputable science/news/academic/government sources.
 - Avoid low-credibility, content-farm, or spam domains.
+{category_focus_note}
 Reference examples (style/topic direction for what to find on the web):
 {reference_headlines}
 {exclusion_note}
@@ -258,98 +269,175 @@ def discover_stories(
     max_attempts = env_int("DISCOVERY_MAX_RETRIES", 5)
     min_domains = env_int("DISCOVERY_MIN_DISTINCT_DOMAINS", 4)
     batch_size = max(1, env_int("DISCOVERY_BATCH_SIZE", 5))
-    by_url: dict[str, Story] = {}
+    category_split = env_bool("DISCOVERY_CATEGORY_SPLIT", True)
+    fallback_raw = os.getenv("DISCOVERY_FALLBACK_LOOKBACK_DAYS", "120,180,365")
+    fallback_windows = [lookback_days]
+    for token in fallback_raw.split(","):
+        tok = token.strip()
+        if not tok:
+            continue
+        try:
+            val = int(tok)
+        except ValueError:
+            continue
+        if val > 0 and val not in fallback_windows:
+            fallback_windows.append(val)
 
-    for _ in range(max_attempts):
-        remaining = max_count - len(by_url)
-        if remaining <= 0:
-            break
-        request_count = min(batch_size, remaining)
-        schema = {
-            "type": "object",
-            "additionalProperties": False,
-            "properties": {
-                "stories": {
-                    "type": "array",
-                    "minItems": request_count,
-                    "maxItems": request_count,
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "title": {"type": "string"},
-                            "summary": {"type": "string"},
-                            "source": {"type": "string"},
-                            "date": {"type": "string"},
-                            "url": {"type": "string"},
-                            "category": {
-                                "type": "string",
-                                "enum": [
-                                    "behavior",
-                                    "intelligence",
-                                    "communication",
-                                    "social_structure",
-                                    "adaptation",
-                                    "cognition_emotion",
-                                    "viral_explainer",
-                                    "mixed",
-                                ],
-                            },
+    schema = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "stories": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": max_count,
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        "title": {"type": "string"},
+                        "summary": {"type": "string"},
+                        "source": {"type": "string"},
+                        "date": {"type": "string"},
+                        "url": {"type": "string"},
+                        "category": {
+                            "type": "string",
+                            "enum": [
+                                "behavior",
+                                "intelligence",
+                                "communication",
+                                "social_structure",
+                                "adaptation",
+                                "cognition_emotion",
+                                "viral_explainer",
+                                "mixed",
+                            ],
                         },
-                        "required": ["title", "summary", "source", "date", "url", "category"],
                     },
-                }
-            },
-            "required": ["stories"],
-        }
-        excluded_urls = list(by_url.keys())
-        payload = call_openai(
-            api_key=api_key,
-            model=model,
-            prompt=build_story_prompt(request_count, request_count, lookback_days, excluded_urls),
-            schema_name="hidden_discoveries",
-            schema=schema,
-            use_web_search=True,
-        )
-        candidate = [
-            Story(
-                title=row["title"].strip(),
-                summary=row["summary"].strip(),
-                source=row["source"].strip(),
-                date=row["date"].strip(),
-                url=row["url"].strip(),
-                category=row["category"].strip(),
-            )
-            for row in payload["stories"]
-        ]
+                    "required": ["title", "summary", "source", "date", "url", "category"],
+                },
+            }
+        },
+        "required": ["stories"],
+    }
 
-        filtered: list[Story] = []
+    best_aggregate: list[Story] = []
+    for window in fallback_windows:
+        by_url: dict[str, Story] = {}
         today = dt.date.today()
-        min_date = today - dt.timedelta(days=lookback_days)
-        for item in candidate:
-            domain = (urlparse(item.url).netloc or "").lower()
-            if domain in BLOCKED_DISCOVERY_DOMAINS:
-                continue
-            if not item.url.startswith("http"):
-                continue
-            try:
-                published = dt.date.fromisoformat(item.date.strip())
-            except Exception:
-                continue
-            if not (min_date <= published <= today):
-                continue
-            filtered.append(item)
+        min_date = today - dt.timedelta(days=window)
+        min_domains_target = min_domains
 
-        distinct_domains = len({(urlparse(s.url).netloc or "").lower() for s in filtered})
-        for story in filtered:
-            by_url[story.url] = story
+        for _ in range(max_attempts):
+            remaining = max_count - len(by_url)
+            if remaining <= 0:
+                break
+            request_count = min(batch_size, remaining)
+            excluded_urls = list(by_url.keys())
+            payload = call_openai(
+                api_key=api_key,
+                model=model,
+                prompt=build_story_prompt(
+                    request_count, request_count, window, excluded_urls
+                ),
+                schema_name="hidden_discoveries",
+                schema=schema,
+                use_web_search=True,
+            )
+            candidate = [
+                Story(
+                    title=row["title"].strip(),
+                    summary=row["summary"].strip(),
+                    source=row["source"].strip(),
+                    date=row["date"].strip(),
+                    url=row["url"].strip(),
+                    category=row["category"].strip(),
+                )
+                for row in payload["stories"]
+            ]
 
-        aggregate = list(by_url.values())[:max_count]
-        agg_domains = len({(urlparse(s.url).netloc or "").lower() for s in aggregate})
-        if len(aggregate) >= min_count and agg_domains >= min_domains:
-            return aggregate
+            filtered: list[Story] = []
+            for item in candidate:
+                domain = (urlparse(item.url).netloc or "").lower()
+                if domain in BLOCKED_DISCOVERY_DOMAINS:
+                    continue
+                if not item.url.startswith("http"):
+                    continue
+                try:
+                    published = dt.date.fromisoformat(item.date.strip())
+                except Exception:
+                    continue
+                if not (min_date <= published <= today):
+                    continue
+                filtered.append(item)
 
-    aggregate = list(by_url.values())[:max_count]
+            for story in filtered:
+                by_url[story.url] = story
+
+            aggregate = list(by_url.values())[:max_count]
+            agg_domains = len({(urlparse(s.url).netloc or "").lower() for s in aggregate})
+            if len(aggregate) > len(best_aggregate):
+                best_aggregate = aggregate
+            if len(aggregate) >= min_count and agg_domains >= min_domains_target:
+                return aggregate
+
+        if category_split and len(by_url) < min_count:
+            for focus in [
+                "behavior",
+                "intelligence",
+                "communication",
+                "social_structure",
+                "adaptation",
+                "cognition_emotion",
+                "viral_explainer",
+            ]:
+                remaining = max_count - len(by_url)
+                if remaining <= 0:
+                    break
+                request_count = min(3, remaining)
+                excluded_urls = list(by_url.keys())
+                payload = call_openai(
+                    api_key=api_key,
+                    model=model,
+                    prompt=build_story_prompt(
+                        request_count, request_count, window, excluded_urls, category_focus=focus
+                    ),
+                    schema_name="hidden_discoveries",
+                    schema=schema,
+                    use_web_search=True,
+                )
+                candidate = [
+                    Story(
+                        title=row["title"].strip(),
+                        summary=row["summary"].strip(),
+                        source=row["source"].strip(),
+                        date=row["date"].strip(),
+                        url=row["url"].strip(),
+                        category=row["category"].strip(),
+                    )
+                    for row in payload["stories"]
+                ]
+                for item in candidate:
+                    domain = (urlparse(item.url).netloc or "").lower()
+                    if domain in BLOCKED_DISCOVERY_DOMAINS or not item.url.startswith("http"):
+                        continue
+                    try:
+                        published = dt.date.fromisoformat(item.date.strip())
+                    except Exception:
+                        continue
+                    if not (min_date <= published <= today):
+                        continue
+                    by_url[item.url] = item
+
+            aggregate = list(by_url.values())[:max_count]
+            agg_domains = len({(urlparse(s.url).netloc or "").lower() for s in aggregate})
+            relaxed_domains = max(2, min_domains - 1)
+            if len(aggregate) > len(best_aggregate):
+                best_aggregate = aggregate
+            if len(aggregate) >= min_count and agg_domains >= relaxed_domains:
+                return aggregate
+
+    aggregate = best_aggregate[:max_count]
     require_min = env_bool("DISCOVERY_REQUIRE_MIN_COUNT", False)
     if require_min and len(aggregate) < min_count:
         raise RuntimeError(
@@ -479,6 +567,20 @@ Rules:
     {reference_headlines}
   - Produce exactly 3 headline options.
   - Keep them compelling but factual (no fabricated claims).
+  - 45-65 characters max.
+  - Grade 6 reading level, simple words, no academic tone.
+  - Avoid phrases: "new study reveals", "researchers say", "sheds light on", "evidence suggests".
+  - Create a strong curiosity gap.
+  - Emphasize unusual behavior, survival instinct, or intelligence.
+  - Sound like a compelling story, not a research paper.
+  - No clickbait exaggeration.
+  - Prefer emotional moment triggers where natural:
+    "caught", "seen", "after getting hurt", "turn to", "caught on camera", "their own version of".
+  - Apply upgrade filter:
+    replace neutral verbs with stronger verbs where factual:
+    "use -> turn to", "show -> reveal", "climb -> scale / battle up";
+    add moment triggers when appropriate:
+    "after getting hurt", "when trapped", "as rivers rise".
 - Citation quality constraints:
   - Every paragraph must have its own citation URL.
   - Avoid reusing the same citation URL for multiple paragraphs.
@@ -631,6 +733,70 @@ def flesch_reading_ease(text: str) -> float:
     return 206.835 - (1.015 * words_per_sentence) - (84.6 * syllables_per_word)
 
 
+def headline_ctr_score(headline: str) -> int:
+    h = headline.strip()
+    h_low = h.lower()
+    if not h:
+        return 0
+
+    banned_phrases = [
+        "new study reveals",
+        "researchers say",
+        "sheds light on",
+        "evidence suggests",
+    ]
+    if any(bp in h_low for bp in banned_phrases):
+        return 0
+
+    words = split_words(h)
+    if not words:
+        return 0
+
+    # readability-ish constraints for headlines
+    if len(h) < 45 or len(h) > 65:
+        return 0
+
+    # Simple vocabulary proxy: penalize very long words.
+    avg_word_len = sum(len(w) for w in words) / len(words)
+    if avg_word_len > 6.2:
+        return 0
+
+    # 5-point checklist, each 1-5
+    score_components: list[int] = []
+
+    # tension or vulnerability
+    tension_terms = ["trapped", "hurt", "danger", "risk", "struggle", "fight", "battle", "caught"]
+    score_components.append(5 if any(t in h_low for t in tension_terms) else 2)
+
+    # unexpected action
+    unexpected_terms = ["instead", "but", "turn to", "their own version", "never", "odd", "strange", "unexpected"]
+    score_components.append(5 if any(t in h_low for t in unexpected_terms) else 3)
+
+    # visual clarity
+    visual_terms = ["camera", "seen", "caught", "under", "inside", "across", "face", "rescue"]
+    score_components.append(5 if any(t in h_low for t in visual_terms) else 3)
+
+    # story feeling
+    story_terms = ["after", "when", "as", "before", "until"]
+    score_components.append(5 if any(t in h_low for t in story_terms) else 3)
+
+    # simple enough for ~12-year-old
+    score_components.append(5 if avg_word_len <= 5.6 else 3)
+
+    total = sum(score_components)
+    return total
+
+
+def headlines_quality_score(headlines: list[str]) -> int:
+    if len(headlines) != 3:
+        return 0
+    scores = [headline_ctr_score(h) for h in headlines]
+    # Require each headline to be at least "strong-ish"
+    if any(s < 15 for s in scores):
+        return sum(scores) - 15
+    return sum(scores)
+
+
 def citation_domain(url: str) -> str:
     try:
         return (urlparse(url).netloc or "").lower()
@@ -669,7 +835,7 @@ def generate_draft_with_research_retries(
     max_attempts: int,
 ) -> Draft:
     best_draft: Draft | None = None
-    best_score: tuple[int, int, float, float] | None = None
+    best_score: tuple[int, int, int, float, float] | None = None
     allowed_urls = {
         str(item.get("citation_url", "")).strip()
         for item in research.evidence
@@ -695,6 +861,7 @@ def generate_draft_with_research_retries(
         score = (
             1 if citation_ok else 0,
             1 if urls_from_research else 0,
+            headlines_quality_score(candidate.ctr_headlines),
             -readability_penalty,
             flesch,
         )
