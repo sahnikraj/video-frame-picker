@@ -947,17 +947,21 @@ def write_story_docx(output_dir: Path, story: Story, draft: Draft) -> Path:
     nano_banana_api_key = os.getenv("NANO_BANANA_API_KEY", "").strip()
     if nano_banana_api_key and draft.image_prompts:
         document.add_heading("Image Concepts", level=2)
-        generated_images = write_generated_images(
-            output_dir=output_dir,
-            story=story,
-            image_prompts=draft.image_prompts,
-            api_key=nano_banana_api_key,
-        )
-        for idx, (image_path, prompt) in enumerate(generated_images, start=1):
-            document.add_paragraph(f"Image {idx}")
-            document.add_picture(str(image_path), width=Inches(6.0))
-            document.add_paragraph(f"Prompt: {prompt}")
-            document.add_paragraph("")
+        try:
+            generated_images = write_generated_images(
+                output_dir=output_dir,
+                story=story,
+                image_prompts=draft.image_prompts,
+                api_key=nano_banana_api_key,
+            )
+            for idx, (image_path, prompt) in enumerate(generated_images, start=1):
+                document.add_paragraph(f"Image {idx}")
+                document.add_picture(str(image_path), width=Inches(6.0))
+                document.add_paragraph(f"Prompt: {prompt}")
+                document.add_paragraph("")
+        except Exception as exc:
+            print(f"[warn] Image generation failed for '{story.title}': {exc}")
+            document.add_paragraph("Image generation skipped due to API response issue.")
 
     document.add_paragraph(draft.intro)
     document.add_paragraph(story.url)
