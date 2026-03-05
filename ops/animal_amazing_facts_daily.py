@@ -251,7 +251,11 @@ def call_gemini(
                     text = part.get("text", "").strip()
                     if text:
                         return extract_first_json(text)
-            raise RuntimeError("Gemini response did not include text output.")
+            prompt_feedback = payload.get("promptFeedback", {})
+            raise RuntimeError(
+                "Gemini response did not include text output. "
+                f"promptFeedback={json.dumps(prompt_feedback, ensure_ascii=True)}"
+            )
         except urllib.error.HTTPError as err:
             detail = err.read().decode("utf-8", errors="replace")
             last_exc = RuntimeError(f"Gemini API error ({err.code}): {detail}")
@@ -582,6 +586,14 @@ def research_story(api_key: str, model: str, story: Story, lookback_days: int) -
                     prompt=prompt,
                     use_google_search=True,
                 )
+                if not payload.get("evidence"):
+                    # Fallback: retry without search tool if grounded response has no usable JSON text.
+                    payload = call_gemini(
+                        api_key=gemini_key,
+                        model=model,
+                        prompt=prompt,
+                        use_google_search=False,
+                    )
             else:
                 payload = call_openai(
                     api_key=api_key,
