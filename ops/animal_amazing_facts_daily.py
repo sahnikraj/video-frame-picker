@@ -47,6 +47,7 @@ except Exception:
     raise
 
 OPENAI_API_URL = "https://api.openai.com/v1/responses"
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 NANO_BANANA_API_URL = (
     "https://generativelanguage.googleapis.com/v1beta/models/"
     "gemini-2.5-flash-image:generateContent"
@@ -199,6 +200,66 @@ def call_openai(
     if payload is None:
         raise RuntimeError(f"OpenAI API request failed after {max_retries} attempts: {last_exc}")
     raise RuntimeError(f"Model did not return valid JSON. Output: {text[:500]}")
+
+
+def is_gemini_model(model: str) -> bool:
+    return model.strip().lower().startswith("gemini")
+
+
+def extract_first_json(text: str) -> dict[str, Any]:
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            return json.loads(text[start : end + 1])
+        raise
+
+
+def call_gemini(
+    api_key: str,
+    model: str,
+    prompt: str,
+    use_google_search: bool,
+) -> dict[str, Any]:
+    if not api_key:
+        raise RuntimeError("Missing GEMINI_API_KEY (or fallback NANO_BANANA_API_KEY).")
+
+    body: dict[str, Any] = {"contents": [{"parts": [{"text": prompt}]}]}
+    if use_google_search:
+        body["tools"] = [{"google_search": {}}]
+        body["generationConfig"] = {"temperature": 0.2}
+    else:
+        body["generationConfig"] = {"responseMimeType": "application/json", "temperature": 0.2}
+
+    req = urllib.request.Request(
+        GEMINI_API_URL.format(model=model),
+        data=json.dumps(body).encode("utf-8"),
+        method="POST",
+        headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
+    )
+    timeout_seconds = env_int("OPENAI_TIMEOUT_SECONDS", 300)
+    max_retries = env_int("OPENAI_MAX_RETRIES", 3)
+    last_exc: Exception | None = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout_seconds) as resp:
+                payload = json.loads(resp.read().decode("utf-8"))
+            for cand in payload.get("candidates", []):
+                for part in cand.get("content", {}).get("parts", []):
+                    text = part.get("text", "").strip()
+                    if text:
+                        return extract_first_json(text)
+            raise RuntimeError("Gemini response did not include text output.")
+        except urllib.error.HTTPError as err:
+            detail = err.read().decode("utf-8", errors="replace")
+            last_exc = RuntimeError(f"Gemini API error ({err.code}): {detail}")
+        except (urllib.error.URLError, socket.timeout, TimeoutError, json.JSONDecodeError) as err:
+            last_exc = err
+        if attempt < max_retries:
+            time.sleep(min(20, 2 * attempt))
+    raise RuntimeError(f"Gemini request failed after {max_retries} attempts: {last_exc}")
 
 
 def build_story_prompt(
@@ -505,16 +566,31 @@ def research_story(api_key: str, model: str, story: Story, lookback_days: int) -
     max_attempts = env_int("RESEARCH_MAX_RETRIES", 3)
     last_exc: Exception | None = None
     payload: dict[str, Any] | None = None
+    gemini_key = os.getenv("GEMINI_API_KEY", "").strip() or os.getenv("NANO_BANANA_API_KEY", "").strip()
     for _ in range(max_attempts):
         try:
-            payload = call_openai(
-                api_key=api_key,
-                model=model,
-                prompt=build_research_prompt(story, lookback_days),
-                schema_name="story_research_pack",
-                schema=schema,
-                use_web_search=True,
-            )
+            prompt = build_research_prompt(story, lookback_days)
+            if is_gemini_model(model):
+                prompt += (
+                    "\nReturn JSON with keys: story_title, evidence."
+                    "\nEvidence must be an array of 8-10 objects each with: angle, paragraph, citation_url, source, date."
+                    "\nReturn only JSON."
+                )
+                payload = call_gemini(
+                    api_key=gemini_key,
+                    model=model,
+                    prompt=prompt,
+                    use_google_search=True,
+                )
+            else:
+                payload = call_openai(
+                    api_key=api_key,
+                    model=model,
+                    prompt=prompt,
+                    schema_name="story_research_pack",
+                    schema=schema,
+                    use_web_search=True,
+                )
             break
         except RuntimeError as exc:
             last_exc = exc
@@ -587,6 +663,10 @@ Rules:
   - Use at least 5 distinct citation URLs across the draft.
   - Use at least 3 distinct source domains across the draft.
   - Do not use the original story URL for every paragraph.
+- Image prompt constraints:
+  - Photorealistic documentary style only.
+  - No infographics, no charts, no diagrams, no text overlays, no labels, no split-screen explainers.
+  - Focus on naturalistic scenes relevant to the story subject.
 
 Research evidence JSON:
 {evidence_json}
@@ -651,14 +731,28 @@ def generate_draft(api_key: str, model: str, story: Story, research: StoryResear
         ],
     }
 
-    payload = call_openai(
-        api_key=api_key,
-        model=model,
-        prompt=build_draft_prompt(story, research),
-        schema_name="story_draft",
-        schema=schema,
-        use_web_search=False,
-    )
+    gemini_key = os.getenv("GEMINI_API_KEY", "").strip() or os.getenv("NANO_BANANA_API_KEY", "").strip()
+    prompt = build_draft_prompt(story, research)
+    if is_gemini_model(model):
+        prompt += (
+            "\nReturn only JSON with keys: ctr_headlines, image_prompts, intro, sections, closing, closing_citation_url."
+            "\nEach section requires heading and exactly 2 paragraph objects with text and citation_url."
+        )
+        payload = call_gemini(
+            api_key=gemini_key,
+            model=model,
+            prompt=prompt,
+            use_google_search=False,
+        )
+    else:
+        payload = call_openai(
+            api_key=api_key,
+            model=model,
+            prompt=prompt,
+            schema_name="story_draft",
+            schema=schema,
+            use_web_search=False,
+        )
 
     return Draft(
         ctr_headlines=[str(h).strip() for h in payload["ctr_headlines"]],
@@ -882,8 +976,14 @@ def sanitize_filename(name: str) -> str:
 def generate_nano_banana_image(prompt: str, api_key: str, timeout_seconds: int) -> tuple[bytes, str]:
     aspect_ratio = os.getenv("NANO_BANANA_ASPECT_RATIO", "16:9").strip() or "16:9"
     image_size = os.getenv("NANO_BANANA_IMAGE_SIZE", "1K").strip() or "1K"
+    safe_prompt = (
+        f"{prompt.strip()}\n\n"
+        "Style constraints: photorealistic documentary image only. "
+        "Do not generate infographics, charts, diagrams, labels, text overlays, watermarks, "
+        "UI elements, or split-screen explainer layouts."
+    )
     body = {
-        "contents": [{"parts": [{"text": prompt}]}],
+        "contents": [{"parts": [{"text": safe_prompt}]}],
         "generationConfig": {
             "responseModalities": ["TEXT", "IMAGE"],
             "imageConfig": {
@@ -934,7 +1034,7 @@ def write_generated_images(
     return result
 
 
-def write_story_docx(output_dir: Path, story: Story, draft: Draft) -> Path:
+def write_story_docx(output_dir: Path, story: Story, draft: Draft) -> tuple[Path, list[Path]]:
     timestamp = dt.datetime.now().strftime("%Y-%m-%d")
     filename = f"{timestamp} - {sanitize_filename(story.title)}.docx"
     path = output_dir / filename
@@ -945,23 +1045,28 @@ def write_story_docx(output_dir: Path, story: Story, draft: Draft) -> Path:
         document.add_paragraph(f"{idx}. {headline}")
     document.add_paragraph("")
     nano_banana_api_key = os.getenv("NANO_BANANA_API_KEY", "").strip()
-    if nano_banana_api_key and draft.image_prompts:
-        document.add_heading("Image Concepts", level=2)
-        try:
-            generated_images = write_generated_images(
-                output_dir=output_dir,
-                story=story,
-                image_prompts=draft.image_prompts,
-                api_key=nano_banana_api_key,
-            )
-            for idx, (image_path, prompt) in enumerate(generated_images, start=1):
-                document.add_paragraph(f"Image {idx}")
-                document.add_picture(str(image_path), width=Inches(6.0))
-                document.add_paragraph(f"Prompt: {prompt}")
-                document.add_paragraph("")
-        except Exception as exc:
-            print(f"[warn] Image generation failed for '{story.title}': {exc}")
-            document.add_paragraph("Image generation skipped due to API response issue.")
+    if not nano_banana_api_key:
+        raise RuntimeError(
+            "Missing NANO_BANANA_API_KEY. Image generation is required for draft output."
+        )
+    if not draft.image_prompts:
+        raise RuntimeError(
+            f"No image prompts available for '{story.title}'. Image generation is required."
+        )
+
+    document.add_heading("Image Concepts", level=2)
+    generated_images = write_generated_images(
+        output_dir=output_dir,
+        story=story,
+        image_prompts=draft.image_prompts,
+        api_key=nano_banana_api_key,
+    )
+    for idx, (image_path, prompt) in enumerate(generated_images, start=1):
+        document.add_paragraph(f"Image {idx}")
+        document.add_picture(str(image_path), width=Inches(6.0))
+        document.add_paragraph(f"Filename: {image_path.name}")
+        document.add_paragraph(f"Prompt: {prompt}")
+        document.add_paragraph("")
 
     document.add_paragraph(draft.intro)
     document.add_paragraph(story.url)
@@ -979,7 +1084,7 @@ def write_story_docx(output_dir: Path, story: Story, draft: Draft) -> Path:
     document.add_paragraph(draft.closing_citation_url or story.url)
 
     document.save(path)
-    return path
+    return path, [img_path for img_path, _ in generated_images]
 
 
 def write_prompt_response_docx(output_dir: Path, stories: list[Story]) -> Path:
@@ -1087,6 +1192,7 @@ def main(auth_only: bool = False) -> int:
     research_model = os.getenv("RESEARCH_MODEL", discovery_model).strip()
     draft_model = os.getenv("DRAFT_MODEL", model).strip()
     folder_id = require_env("GOOGLE_DRIVE_FOLDER_ID")
+    image_folder_id = os.getenv("GOOGLE_DRIVE_IMAGE_FOLDER_ID", "").strip() or folder_id
 
     min_count = env_int("STORY_COUNT_MIN", 10)
     max_count = env_int("STORY_COUNT_MAX", 15)
@@ -1134,6 +1240,7 @@ def main(auth_only: bool = False) -> int:
 
     print("[3/5] Generating drafts from researched evidence...")
     generated_files: list[Path] = []
+    generated_images: list[Path] = []
     for idx, story in enumerate(stories, start=1):
         print(f"  - ({idx}/{len(stories)}) {story.title}")
         draft = generate_draft_with_research_retries(
@@ -1143,8 +1250,9 @@ def main(auth_only: bool = False) -> int:
             research=research_by_index[idx],
             max_attempts=draft_max_citation_retries,
         )
-        file_path = write_story_docx(output_dir, story, draft)
+        file_path, image_paths = write_story_docx(output_dir, story, draft)
         generated_files.append(file_path)
+        generated_images.extend(image_paths)
     generated_files.append(prompt_response_file)
 
     print("[4/5] Uploading files...")
@@ -1159,6 +1267,27 @@ def main(auth_only: bool = False) -> int:
             print(f"  - Uploaded: {path.name} -> {link}")
         else:
             print(f"  - Uploaded: {path.name}")
+
+    if generated_images:
+        print("[5/5] Uploading generated images...")
+        for image_path in generated_images:
+            media = MediaFileUpload(
+                str(image_path),
+                mimetype="image/png" if image_path.suffix.lower() == ".png" else "image/jpeg",
+                resumable=False,
+            )
+            metadata = {"name": image_path.name, "parents": [image_folder_id]}
+            created = (
+                drive_service.files()
+                .create(
+                    body=metadata,
+                    media_body=media,
+                    fields="id,name,webViewLink",
+                    supportsAllDrives=True,
+                )
+                .execute()
+            )
+            print(f"  - Uploaded image: {created.get('name')} -> {created.get('webViewLink', '')}")
 
     print("Done.")
     return 0

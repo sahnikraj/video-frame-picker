@@ -23,8 +23,9 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       OPENAI_MODEL: gpt-4.1-mini
       DISCOVERY_MODEL: gpt-4.1-mini
-      RESEARCH_MODEL: gpt-4.1-mini
-      DRAFT_MODEL: gpt-4.1-mini
+      RESEARCH_MODEL: gemini-2.5-flash-lite
+      DRAFT_MODEL: gemini-2.5-flash-lite
+      GEMINI_API_KEY: ${{ secrets.NANO_BANANA_API_KEY }}
       OPENAI_TIMEOUT_SECONDS: '240'
       OPENAI_MAX_RETRIES: '3'
       NANO_BANANA_API_KEY: ${{ secrets.NANO_BANANA_API_KEY }}
@@ -34,6 +35,7 @@ jobs:
 
       GOOGLE_DRIVE_AUTH_MODE: oauth
       GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID_SCIENCE_ANIMAL_AMAZING_FACTS }}
+      GOOGLE_DRIVE_IMAGE_FOLDER_ID: '1jJDKWVb3Oe-GCIi_GVX9JTPOnrZA3l9I'
       GOOGLE_OAUTH_CLIENT_SECRET_FILE: ${{ github.workspace }}/secrets/google_oauth_client_secret.json
       GOOGLE_OAUTH_TOKEN_FILE: ${{ github.workspace }}/secrets/google_oauth_token.json
 
