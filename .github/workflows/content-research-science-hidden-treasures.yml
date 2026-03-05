@@ -50,8 +50,8 @@ jobs:
       DISCOVERY_CATEGORY_SPLIT: 'true'
       DISCOVERY_FALLBACK_LOOKBACK_DAYS: '180,240,365'
       DISCOVERY_REQUIRE_MIN_COUNT: 'false'
-      RESEARCH_MAX_RETRIES: '3'
-      DRAFT_MAX_CITATION_RETRIES: '2'
+      RESEARCH_MAX_RETRIES: '2'
+      DRAFT_MAX_CITATION_RETRIES: '1'
       OVERWRITE_EXISTING: 'true'
       OUTPUT_DIR: ${{ github.workspace }}/outputs/content_research/science_hidden_treasures
 

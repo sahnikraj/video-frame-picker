@@ -991,22 +991,31 @@ def generate_nano_banana_image(prompt: str, api_key: str, timeout_seconds: int) 
             },
         },
     }
-    req = urllib.request.Request(
-        f"{NANO_BANANA_API_URL}?key={api_key}",
-        data=json.dumps(body).encode("utf-8"),
-        method="POST",
-        headers={"Content-Type": "application/json"},
-    )
-    with urllib.request.urlopen(req, timeout=timeout_seconds) as resp:
-        payload = json.loads(resp.read().decode("utf-8"))
+    max_retries = env_int("NANO_BANANA_MAX_RETRIES", 3)
+    last_error: Exception | None = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            req = urllib.request.Request(
+                f"{NANO_BANANA_API_URL}?key={api_key}",
+                data=json.dumps(body).encode("utf-8"),
+                method="POST",
+                headers={"Content-Type": "application/json"},
+            )
+            with urllib.request.urlopen(req, timeout=timeout_seconds) as resp:
+                payload = json.loads(resp.read().decode("utf-8"))
 
-    for candidate in payload.get("candidates", []):
-        for part in candidate.get("content", {}).get("parts", []):
-            inline = part.get("inlineData")
-            if inline and inline.get("data"):
-                mime = inline.get("mimeType", "image/png")
-                return base64.b64decode(inline["data"]), mime
-    raise RuntimeError("Nano Banana response did not include inline image data.")
+            for candidate in payload.get("candidates", []):
+                for part in candidate.get("content", {}).get("parts", []):
+                    inline = part.get("inlineData")
+                    if inline and inline.get("data"):
+                        mime = inline.get("mimeType", "image/png")
+                        return base64.b64decode(inline["data"]), mime
+            last_error = RuntimeError("Nano Banana response did not include inline image data.")
+        except Exception as exc:
+            last_error = exc
+        if attempt < max_retries:
+            time.sleep(min(8, 2 * attempt))
+    raise RuntimeError(str(last_error) if last_error else "Nano Banana image generation failed.")
 
 
 def write_generated_images(
@@ -1264,6 +1273,8 @@ def main(auth_only: bool = False) -> int:
     if generated_images:
         print("[5/5] Uploading generated images...")
         for image_path in generated_images:
+            if overwrite_existing:
+                maybe_delete_existing(drive_service, image_folder_id, image_path.name)
             media = MediaFileUpload(
                 str(image_path),
                 mimetype="image/png" if image_path.suffix.lower() == ".png" else "image/jpeg",
