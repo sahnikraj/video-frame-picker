@@ -382,6 +382,7 @@
     const FRAME_EXTRACT_API_BASE = (window.FRAME_EXTRACT_API_BASE || "").trim().replace(/\/+$/, "");
 
     let currentObjectUrl = null;
+    let frameExtractApiAvailable = !FRAME_EXTRACT_API_BASE ? false : null;
 
     function setStatus(message) {
       statusEl.textContent = message;
@@ -520,14 +521,21 @@
       return `${mins}:${String(rem).padStart(2, "0")}`;
     }
 
-    async function wakeExtractionServer() {
-      if (!FRAME_EXTRACT_API_BASE) return;
+    async function checkExtractionServerAvailability() {
+      if (!FRAME_EXTRACT_API_BASE) {
+        frameExtractApiAvailable = false;
+        return false;
+      }
+
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 45000);
+      const timeout = setTimeout(() => controller.abort(), 15000);
       try {
-        await fetch(`${FRAME_EXTRACT_API_BASE}/health`, { method: "GET", signal: controller.signal });
+        const response = await fetch(`${FRAME_EXTRACT_API_BASE}/health`, { method: "GET", signal: controller.signal });
+        frameExtractApiAvailable = response.ok;
+        return response.ok;
       } catch (err) {
-        // Best-effort warm-up only.
+        frameExtractApiAvailable = false;
+        return false;
       } finally {
         clearTimeout(timeout);
       }
@@ -582,7 +590,7 @@
         } catch (firstErr) {
           setStatus("Server is starting up. Retrying extraction...");
           setLoading(true, "Retrying extraction...");
-          await wakeExtractionServer();
+          await checkExtractionServerAvailability();
           frames = await runApiCall();
         }
 
@@ -658,24 +666,25 @@
 
     async function processVideo(file) {
       if (!file) return;
-      const warmupPromise = FRAME_EXTRACT_API_BASE ? wakeExtractionServer() : Promise.resolve();
+      const availabilityPromise = FRAME_EXTRACT_API_BASE ? checkExtractionServerAvailability() : Promise.resolve(false);
       try {
         await processVideoInBrowser(file, { throwOnFailure: true });
         return;
       } catch (browserErr) {
-        if (!FRAME_EXTRACT_API_BASE) {
-          setStatus("Could not decode this video in your browser. For best compatibility, convert to MP4 (H.264/AAC) and re-upload.");
+        const apiAvailable = frameExtractApiAvailable === null ? await availabilityPromise : frameExtractApiAvailable;
+        if (!apiAvailable) {
+          setStatus("This video could not be decoded in your browser, and server fallback is temporarily unavailable. Convert to MP4 (H.264/AAC) and re-upload.");
           return;
         }
       }
 
       try {
-        await warmupPromise;
         await processVideoViaApi(file);
       } catch (apiErr) {
         console.error(apiErr);
         framesEl.innerHTML = "";
-        setStatus(`Server extraction failed: ${apiErr.message}. For best compatibility, convert to MP4 (H.264/AAC) and re-upload.`);
+        frameExtractApiAvailable = false;
+        setStatus("Server fallback is temporarily unavailable. Convert to MP4 (H.264/AAC) and re-upload.");
       }
     }
 
@@ -686,7 +695,7 @@
 
     // Warm in background to reduce fallback wait when browser decoding fails.
     if (FRAME_EXTRACT_API_BASE) {
-      wakeExtractionServer();
+      checkExtractionServerAvailability();
     }
 
   </script>
